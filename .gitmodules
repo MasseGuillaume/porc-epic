@@ -1,0 +1,3 @@
+[submodule "porcupine"]
+	path = porcupine
+	url = git@github.com:anishathalye/porcupine.git
