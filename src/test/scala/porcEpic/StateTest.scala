@@ -4,7 +4,7 @@ import org.scalatest.funsuite.AnyFunSuite
 
 import porcEpic.{fromLong => t}
 
-class PorcEpicTest extends AnyFunSuite {
+class StateTest extends AnyFunSuite {
 
   opaque type State = Int
 
