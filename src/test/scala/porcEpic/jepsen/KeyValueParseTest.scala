@@ -6,24 +6,24 @@ import scala.util.parsing.combinator.lexical.Lexical
 
 import org.scalatest.funsuite.AnyFunSuite
 
-enum EntryType:
-  case Invoke extends EntryType
-  case Ok extends EntryType
+object KeyValueParser extends RegexParsers {
+  enum EntryType:
+    case Invoke extends EntryType
+    case Ok extends EntryType
 
-enum FunctionType:
-  case Get extends FunctionType
-  case Put extends FunctionType
-  case Append extends FunctionType
+  enum FunctionType:
+    case Get extends FunctionType
+    case Put extends FunctionType
+    case Append extends FunctionType
 
-case class KeyValueEntry(
-  process: Int, 
-  `type`: EntryType,
-  f: FunctionType,
-  key: String,
-  value: Option[String]
-)
+  case class KeyValueEntry(
+    process: Int, 
+    `type`: EntryType,
+    f: FunctionType,
+    key: String,
+    value: Option[String]
+  )
 
-object Parser extends RegexParsers {
   def apply(input: String): KeyValueEntry = 
     parseAll(root, input) match {
       case Success(result, _) => result
@@ -71,7 +71,9 @@ object Parser extends RegexParsers {
 
 class KeyValueParseTest extends AnyFunSuite {
 
-  def parse(input: String): KeyValueEntry = Parser(input)
+  import KeyValueParser._
+
+  def parse(input: String): KeyValueEntry = KeyValueParser(input)
 
   test("parse get invoke") {
     val input = """{:process 0, :type :invoke, :f :get, :key "7", :value nil}"""
@@ -87,14 +89,14 @@ class KeyValueParseTest extends AnyFunSuite {
   }
 
   test("parse get return") {
-    val input = """{:process 0, :type :ok, :f :get, :key "7", :value nil}"""
+    val input = """{:process 0, :type :ok, :f :get, :key "7", :value "x 0 4 y"}"""
     val obtained = parse(input)
     val expected = KeyValueEntry(
       process = 0, 
       `type` = EntryType.Ok,
       f = FunctionType.Get,
       key = "7",
-      value = None
+      value = Some("x 0 4 y")
     )
     assert(obtained == expected)
   }

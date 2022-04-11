@@ -66,6 +66,6 @@ class RegisterTest extends AnyFunSuite {
       Operation(clientId = cid(2), input = Get,    invocation = t(5), output = 0, response = t(10)),
     )
     val (result, _) = specification.checkOperations(ops)
-    assert(result == CheckResult.Illgal)
+    assert(result == CheckResult.Illegal)
   }
 }

@@ -1,134 +1,123 @@
 package porcEpic
 package jepsen
 
+
+import scala.io.Source
+
 import org.scalatest.funsuite.AnyFunSuite
 
 object KeyValue {
   opaque type State = String
+  def state(value: String): State = value
+  extension (state: State) {
+    def +(other: State): State = state + other
+  }
 
   sealed trait Input {
     val key: String
   }
-  case class Put(key: String, value: String) extends Input
+  case class Put(key: String, value: State) extends Input
   case class Get(key: String) extends Input
-  case class Append(key: String, value: String) extends Input
+  case class Append(key: String, value: State) extends Input
 }
 
 class KeyValueTest extends AnyFunSuite {
 
   import KeyValue._
 
-  // val specification = new EntriesSpecification[State, Input]{
-  //   def partitionEntries(entries: List[Entry[State, Input]]): List[List[Entry[State, Input]]] = {
-  //     Entry.toOperations(entries)
-  //       .groupBy(_.input.key)
-  //       .values
-  //       .map(Entry.fromOperations)
-  //       .toList
-  //   }
-  //   def initialState: State = ""
-  //   def apply(state: State, input: Input, output: State): (Boolean, State) = {
-  //     input match {
-  //       case Get(key)           => (output == state, state)
-  //       case Put(key, value)    => (true, value)
-  //       case Append(key, value) => (true, state + value)
-  //     }
-  //   }
-  //   def describeOperation(input: Input, output: State): String = {
-  //     input match {
-  //       case Get(key)           => s"get($key) -> $output"
-  //       case Put(key, value)    => s"put($key, $value)"
-  //       case Append(key, value) => s"append($key, $value)"
-  //     }
-  //   }
-  // }
-
-
-  test("") {
-    
-  }
-
-  // invokeGet, _    := `{:process (\d+), :type :invoke, :f :get,    :key "(.*)", :value nil}`
-  // invokePut, _    := `{:process (\d+), :type :invoke, :f :put,    :key "(.*)", :value "(.*)"}`
-  // nvokeAppend, _  := `{:process (\d+), :type :invoke, :f :append, :key "(.*)", :value "(.*)"}`
-
-  // returnGet, _    := `{:process (\d+), :type :ok,     :f :get,    :key ".*",   :value "(.*)"}`
-  // returnPut, _    := `{:process (\d+), :type :ok,     :f :put,    :key ".*",   :value ".*"}`
-  // returnAppend, _ := `{:process (\d+), :type :ok,     :f :append, :key ".*",   :value ".*"}`
-}
-
-/*
-var kvModel = Model{
-  Partition: func(history []Operation) [][]Operation {
-    m := make(map[string][]Operation)
-    for _, v := range history {
-      key := v.Input.(kvInput).key
-      m[key] = append(m[key], v)
+  val specification = new EntriesSpecification[State, Input]{
+    def partitionEntries(entries: List[Entry[State, Input]]): List[List[Entry[State, Input]]] = {
+      Entry.toOperations(entries)
+        .groupBy(_.input.key)
+        .values
+        .map(Entry.fromOperations)
+        .toList
     }
-    keys := make([]string, 0, len(m))
-    for k := range m {
-      keys = append(keys, k)
-    }
-    sort.Strings(keys)
-    ret := make([][]Operation, 0, len(keys))
-    for _, k := range keys {
-      ret = append(ret, m[k])
-    }
-    return ret
-  },
-  PartitionEvent: func(history []Event) [][]Event {
-    m := make(map[string][]Event)
-    match := make(map[int]string) // id -> key
-    for _, v := range history {
-      if v.Kind == CallEvent {
-        key := v.Value.(kvInput).key
-        m[key] = append(m[key], v)
-        match[v.Id] = key
-      } else {
-        key := match[v.Id]
-        m[key] = append(m[key], v)
+    def initialState: State = state("")
+    def apply(state: State, input: Input, output: State): (Boolean, State) = {
+      input match {
+        case Get(key)           => (output == state, state)
+        case Put(key, value)    => (true, value)
+        case Append(key, value) => (true, state + value)
       }
     }
-    var ret [][]Event
-    for _, v := range m {
-      ret = append(ret, v)
+    def describeOperation(input: Input, output: State): String = {
+      input match {
+        case Get(key)           => s"get($key) -> $output"
+        case Put(key, value)    => s"put($key, $value)"
+        case Append(key, value) => s"append($key, $value)"
+      }
     }
-    return ret
-  },
-  Init: func() interface{} {
-    // note: we are modeling a single key's value here;
-    // we're partitioning by key, so this is okay
-    return ""
-  },
-  Step: func(state, input, output interface{}) (bool, interface{}) {
-    inp := input.(kvInput)
-    out := output.(kvOutput)
-    st := state.(string)
-    if inp.op == 0 {
-      // get
-      return out.value == st, state
-    } else if inp.op == 1 {
-      // put
-      return true, inp.value
-    } else {
-      // append
-      return true, (st + inp.value)
-    }
-  },
-  DescribeOperation: func(input, output interface{}) string {
-    inp := input.(kvInput)
-    out := output.(kvOutput)
-    switch inp.op {
-    case 0:
-      return fmt.Sprintf("get('%s') -> '%s'", inp.key, out.value)
-    case 1:
-      return fmt.Sprintf("put('%s', '%s')", inp.key, inp.value)
-    case 2:
-      return fmt.Sprintf("append('%s', '%s')", inp.key, inp.value)
-    default:
-      return "<invalid>"
-    }
-  },
-}
+  }
 
-*/
+  def parse(filename: String): List[Entry[State, Input]] = {
+    import KeyValueParser._
+    import porcEpic.{fromLong => t}
+
+    // val content = Files.readString(Paths.get(filename))
+    val source = Source.fromFile(s"porcupine/test_data/kv/${filename}.txt")
+    val entries = source.getLines.map(KeyValueParser.apply)
+
+    val processToId = collection.mutable.Map.empty[Int, Int]
+    var i = 0
+    val events: List[Entry[State, KeyValue.Input]] = 
+      entries.zipWithIndex.map {
+        case (KeyValueEntry(process, EntryType.Invoke, functionType, key, maybeValue), time) =>
+          val id = i
+          i += 1
+          processToId(process) = id
+          val input: KeyValue.Input =
+            (functionType, maybeValue) match {
+              case (FunctionType.Get,    None)        => KeyValue.Get(key)
+              case (FunctionType.Put,    Some(value)) => KeyValue.Put(key, state(value))
+              case (FunctionType.Append, Some(value)) => KeyValue.Append(key, state(value))
+              case _ => throw new Exception(s"bogus parsing: $filename $functionType $maybeValue")
+            }
+          Entry.Call[State, KeyValue.Input](
+            value = input,
+            time = t(time),
+            id = id,
+            clientId = cid(process)
+          )
+
+        case (KeyValueEntry(process, EntryType.Ok, _, key, Some(output)), time) =>
+          val matchId = processToId(process)
+          processToId -= process
+          Entry.Return[State, KeyValue.Input](
+            value = state(output),
+            time = t(time),
+            id = matchId,
+            clientId = cid(process)
+          )
+
+        case other =>
+          throw new Exception(s"bogus parsing: $filename, $other")
+      }.toList
+
+    source.close()
+
+    events
+  }
+
+  List(
+    "c01-bad",
+    "c01-ok",
+    "c10-bad",
+    "c10-ok",
+    "c50-bad",
+    "c50-ok",
+  ).foreach(name =>
+
+    test(name) {
+      val entries = parse(name)
+      val (obtained, _) = specification.checkEntries(entries)
+
+      val expected =
+        if (name.endsWith("-bad")) CheckResult.Illegal
+        else if (name.endsWith("-ok")) CheckResult.Ok
+        else throw new Exception("invalid test name: " + name)
+
+      assert(obtained == expected)
+    }
+  )
+}

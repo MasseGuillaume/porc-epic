@@ -40,7 +40,7 @@ extension [S, T](specification: Specification[S, T]) {
     
     val result = 
       if (ok) CheckResult.Ok
-      else CheckResult.Illgal
+      else CheckResult.Illegal
 
     // TODO
     val info = LinearizationInfo[S, T](

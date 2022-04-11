@@ -83,7 +83,7 @@ trait EntriesSpecification[S, T] extends Specification[S, T] {
 enum CheckResult:
   case Unknown
   case Ok
-  case Illgal
+  case Illegal
 
 case class LinearizationInfo[S, T](
   history: List[List[Entry[S, T]]],
