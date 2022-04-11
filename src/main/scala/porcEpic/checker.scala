@@ -1,7 +1,11 @@
 package porcEpic
 
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.{Await, Future, ExecutionContext}
+import scala.concurrent.duration.{FiniteDuration, Duration}
 import scala.collection.mutable.{BitSet => MBitset, Map => MMap}
+
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.{Executors, TimeUnit, Callable, CountDownLatch}
 
 enum Verbosity:
   case Debug
@@ -36,22 +40,74 @@ extension [S, T](specification: Specification[S, T]) {
     timeout: Option[FiniteDuration],
     verbosity: Verbosity
   ): (CheckResult, LinearizationInfo[S, T]) = {
-    val (ok, l) = checkSingle(partitionnedHistory.head)
-    
-    val result = 
-      if (ok) CheckResult.Ok
-      else CheckResult.Illegal
 
-    // TODO
-    val info = LinearizationInfo[S, T](
-      history = Nil,
-      partialLinearizations = Nil
-    )
+    val processors = Runtime.getRuntime().availableProcessors()
+    val threadPool = Executors.newFixedThreadPool(processors)
+    var result = true
+    var timedout = false
 
-    (result, info)
+    val killSwitch = new AtomicBoolean(false)
+
+    timeout.foreach { t =>
+      val scheduler = Executors.newScheduledThreadPool(1)
+      scheduler.schedule(
+        new Callable[Unit] {
+          def call(): Unit = {
+            timedout = true
+            killSwitch.set(true)
+          }
+        },
+        t.toSeconds,
+        TimeUnit.SECONDS
+      )
+    }
+
+    val tasksCount = new CountDownLatch(partitionnedHistory.size)
+
+
+    partitionnedHistory.zipWithIndex.map { (history, i) =>
+      threadPool.submit(
+        new Callable[Unit] {
+          def call(): Unit = {
+            val (ok, _) = checkSingle(history, killSwitch)
+            result = result && ok
+            tasksCount.countDown()
+            println("tasks to go: " + tasksCount.getCount)
+          }
+        }
+      )
+    }
+
+    val allDone =
+      timeout match {
+        case Some(t) => 
+          tasksCount.await(t.toSeconds, TimeUnit.SECONDS)
+
+        case None =>
+          tasksCount.await()
+          true
+      }
+      
+    if (allDone && !timedout) {
+      val resultOutput = 
+        if (result) CheckResult.Ok
+        else CheckResult.Illegal
+
+      // TODO
+      val info = LinearizationInfo.empty[S, T]
+      (resultOutput, info)
+
+    } else {
+      val info = LinearizationInfo[S, T](
+        history = Nil,
+        partialLinearizations = Nil
+      )
+
+      (CheckResult.TimedOut, LinearizationInfo.empty[S, T])
+    }
   }
 
-  private def checkSingle(history: List[Entry[S, T]]): (Boolean, Array[Array[Int]]) = {
+  private def checkSingle(history: List[Entry[S, T]], killSwitch: AtomicBoolean): (Boolean, Array[Array[Int]]) = {
     case class CacheEntry(linearized: MBitset, state: S)
     case class CallEntry(entry: EntryLinkedList[S, T], state: S)
 
@@ -87,6 +143,9 @@ extension [S, T](specification: Specification[S, T]) {
     val headEntry = buggy.insertBefore(entry)
 
     while (headEntry.next != null) {
+      if (killSwitch.get) {
+        return (false, longest)
+      }
       entry.elem match {
         case node: EntryNode.Call[_, _] =>
           val matching = 

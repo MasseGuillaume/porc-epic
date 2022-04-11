@@ -81,7 +81,7 @@ trait EntriesSpecification[S, T] extends Specification[S, T] {
 }
 
 enum CheckResult:
-  case Unknown
+  case TimedOut
   case Ok
   case Illegal
 
@@ -89,3 +89,8 @@ case class LinearizationInfo[S, T](
   history: List[List[Entry[S, T]]],
   partialLinearizations: List[List[List[Int]]]
 )
+
+object LinearizationInfo {
+  def empty[S, T]: LinearizationInfo[S, T] = 
+    LinearizationInfo(Nil, Nil)
+}
