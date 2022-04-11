@@ -7,48 +7,36 @@ enum Verbosity:
   case Debug
   case Error
 
-object Stack {
-  def empty[T]: Stack[T] = new Stack[T](Nil)
-}
-
-class Stack[T](var xs: List[T]) {
-  def push(x: T): Unit = xs = x :: xs
-  def pop: T = {
-    val t = xs.head
-    xs = xs.tail
-    t
-  }
-  def length: Int = xs.length
-  def foreach(f: T => Unit): Unit = xs.foreach(f)
-  def zipWithIndex: List[(T, Int)] = xs.zipWithIndex
-}
-
-extension [S, T](specification: Specification[S, T])(using eq: Eq[S]) {
-
+extension [S, T](specification: OperationSpecification[S, T]) {
   def checkOperations(
     history: List[Operation[S, T]],
     timeout: Option[FiniteDuration] = None,
     verbosity: Verbosity = Verbosity.Error
   ): (CheckResult, LinearizationInfo[S, T]) = {
     val partitions = specification.partitionOperations(history).map(Entry.fromOperations)
-    checkParallel(partitions, timeout, verbosity)
+    specification.checkParallel(partitions, timeout, verbosity)
   }
+}
 
+extension [S, T](specification: EntriesSpecification[S, T]) {
   def checkEntries(
     history: List[Entry[S, T]],
     timeout: Option[FiniteDuration] = None,
     verbosity: Verbosity = Verbosity.Error
   ): (CheckResult, LinearizationInfo[S, T]) = {
     val partitions = specification.partitionEntries(history).map(renumber)
-    checkParallel(partitions, timeout, verbosity)
+    specification.checkParallel(partitions, timeout, verbosity)
   }
+}
 
-  private def checkParallel(
-    history: List[List[Entry[S, T]]],
+
+extension [S, T](specification: Specification[S, T]) {
+  def checkParallel(
+    partitionnedHistory: List[List[Entry[S, T]]],
     timeout: Option[FiniteDuration],
     verbosity: Verbosity
   ): (CheckResult, LinearizationInfo[S, T]) = {
-    val (ok, l) = checkSingle(history.head)
+    val (ok, l) = checkSingle(partitionnedHistory.head)
     
     val result = 
       if (ok) CheckResult.Ok
@@ -81,7 +69,7 @@ extension [S, T](specification: Specification[S, T])(using eq: Eq[S]) {
     def cacheContains(entry: CacheEntry): Boolean = {
       cache.getOrElse(entry.linearized.hashCode, Nil).exists( elem =>
         entry.linearized == elem.linearized && 
-          entry.state.equal(elem.state)
+          specification.equal(entry.state, elem.state)
       )
     }
 
@@ -199,3 +187,19 @@ given EntryOrderingByTime[S, T]: Ordering[Entry[S, T]] =
       }
     )
   )
+
+object Stack {
+  def empty[T]: Stack[T] = new Stack[T](Nil)
+}
+
+class Stack[T](var xs: List[T]) {
+  def push(x: T): Unit = xs = x :: xs
+  def pop: T = {
+    val t = xs.head
+    xs = xs.tail
+    t
+  }
+  def length: Int = xs.length
+  def foreach(f: T => Unit): Unit = xs.foreach(f)
+  def zipWithIndex: List[(T, Int)] = xs.zipWithIndex
+}

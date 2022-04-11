@@ -4,7 +4,7 @@ import org.scalatest.funsuite.AnyFunSuite
 
 import porcEpic.{fromLong => t}
 
-class StateTest extends AnyFunSuite {
+class RegisterTest extends AnyFunSuite {
 
   opaque type State = Int
 
@@ -14,13 +14,7 @@ class StateTest extends AnyFunSuite {
 
   import Input._
 
-  given Eq[State] with
-    def equal(a: State, b: State): Boolean = a == b
-
-  given Show[State] with
-    def show(a: State): String = a.toString
-
-  val specification = new Specification[State, Input]{
+  val specification = new OperationSpecification[State, Input]{
 
     def initialState: State = 0
 
@@ -37,6 +31,11 @@ class StateTest extends AnyFunSuite {
         case Get => s"get() -> $output"
       }
     }
+
+    def partitionOperations(
+      operations: List[Operation[State, Input]]
+    ): List[List[Operation[State, Input]]] =
+      List(operations)
   }
 
   test("linearizable") {

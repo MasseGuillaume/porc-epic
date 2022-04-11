@@ -7,6 +7,17 @@ def toLong(time: Time): Long = time
 opaque type ClientId = Int
 def cid(value: Int): ClientId = value
 
+object Operation {
+  def apply[S, T](call: Entry.Call[S, T], `return`: Entry.Return[S, T]): Operation[S, T] = 
+    Operation(
+      clientId = call.clientId,
+      input = call.value,
+      invocation = call.time,
+      output = `return`.value,
+      response = `return`.time,
+    )
+}
+
 case class Operation[S, T](
   clientId: ClientId,
   input: T,
@@ -40,36 +51,34 @@ object Entry {
       )
     ).sorted
   }
+
+  def toOperations[S, T](history: List[Entry[S, T]]): List[Operation[S, T]] = {
+    history.groupBy(_.id).map {
+      case (_, List(c: Entry.Call[_, _],   r: Entry.Return[_, _])) => Operation(c, r)
+      case (_, List(r: Entry.Return[_, _], c: Entry.Call[_, _])) => Operation(c, r)
+      case (id, entries) => 
+        throw new Exception(
+          s"""|history is not complete for id $id:
+              |${entries.mkString("\n")}""".stripMargin
+        )
+    }.toList
+  }
 }
 
-trait Show[T]:
-  def show(a: T): String
-
-trait Eq[T]:
-  def equal(a: T, b: T): Boolean
-
-extension [T](a: T)(using e: Eq[T])
-  def equal(b: T): Boolean = e.equal(a, b)
-
-trait Specification[S, T](using Eq[S], Show[S]){
-  def partitionOperations: List[Operation[S, T]] => List[List[Operation[S, T]]] =
-    withoutPartitioningOperations
-
-  def partitionEntries: List[Entry[S, T]] => List[List[Entry[S, T]]] =
-    withoutPartitioningEntries
-
+trait Specification[S, T]{
   def initialState: S
-
+  def equal(state1: S, state2: S): Boolean = state1 == state2
   def apply(state: S, input: T, output: S): (Boolean, S)
-
   def describeOperation(input: T, output: S): String
 }
 
-def withoutPartitioningOperations[S, T](history: List[Operation[S, T]]): List[List[Operation[S, T]]] = 
-  List(history)
+trait OperationSpecification[S, T] extends Specification[S, T] {
+  def partitionOperations(operations: List[Operation[S, T]]): List[List[Operation[S, T]]]
+}
 
-def withoutPartitioningEntries[S, T](history: List[Entry[S, T]]): List[List[Entry[S, T]]] = 
-  List(history)
+trait EntriesSpecification[S, T] extends Specification[S, T] {
+  def partitionEntries(entries: List[Entry[S, T]]): List[List[Entry[S, T]]]
+}
 
 enum CheckResult:
   case Unknown
