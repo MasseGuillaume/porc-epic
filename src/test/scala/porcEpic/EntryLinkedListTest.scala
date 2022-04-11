@@ -6,7 +6,6 @@ class EntryLinkedListTest extends AnyFunSuite {
 
   val entries = Entry.fromOperations(history)
 
-  
   test("toString") {
 
     val obtained = DoubleLinkedList(1, 2, 3).toString
