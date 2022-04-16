@@ -12,9 +12,11 @@ object KeyValue {
   sealed trait Input {
     val key: String
   }
-  case class Put(key: String, value: State) extends Input
-  case class Get(key: String) extends Input
-  case class Append(key: String, value: State) extends Input
+  object Input {
+    case class Put(key: String, value: State) extends Input
+    case class Get(key: String) extends Input
+    case class Append(key: String, value: State) extends Input
+  }
 
   val specification = new EntriesSpecification[State, Input]{
     def partitionEntries(entries: List[Entry[State, Input]]): List[List[Entry[State, Input]]] = {
@@ -27,16 +29,16 @@ object KeyValue {
     def initialState: State = state("")
     def apply(state: State, input: Input, output: State): (Boolean, State) = {
       input match {
-        case Get(key)           => (output == state, state)
-        case Put(key, value)    => (true, value)
-        case Append(key, value) => (true, state + value)
+        case Input.Get(key)           => (output == state, state)
+        case Input.Put(key, value)    => (true, value)
+        case Input.Append(key, value) => (true, state + value)
       }
     }
     def describeOperation(input: Input, output: State): String = {
       input match {
-        case Get(key)           => s"get($key) -> $output"
-        case Put(key, value)    => s"put($key, $value)"
-        case Append(key, value) => s"append($key, $value)"
+        case Input.Get(key)           => s"get($key) -> $output"
+        case Input.Put(key, value)    => s"put($key, $value)"
+        case Input.Append(key, value) => s"append($key, $value)"
       }
     }
   }

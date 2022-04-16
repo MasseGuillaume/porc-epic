@@ -1,8 +1,12 @@
 package porcEpic
 package parser
 
-import scala.util.parsing.combinator._
+import specification.KeyValue
+
+import scala.util.parsing.combinator.RegexParsers
 import scala.util.parsing.combinator.lexical.Lexical
+
+import scala.io.Source
 
 object KeyValueParser extends RegexParsers {
   enum EntryType:
@@ -21,6 +25,54 @@ object KeyValueParser extends RegexParsers {
     key: String,
     value: Option[String]
   )
+
+  def parseFile(filename: String): List[Entry[KeyValue.State, KeyValue.Input]] = {
+    import KeyValueParser.{EntryType, FunctionType, KeyValueEntry}
+    import porcEpic.{fromLong => t}
+
+    val source = Source.fromFile(s"porcupine/test_data/kv/${filename}.txt")
+    val entries = source.getLines.map(KeyValueParser.apply)
+
+    val processToId = collection.mutable.Map.empty[Int, Int]
+    var i = 0
+    val events: List[Entry[KeyValue.State, KeyValue.Input]] = 
+      entries.zipWithIndex.map {
+        case (KeyValueEntry(process, EntryType.Invoke, functionType, key, maybeValue), time) =>
+          val id = i
+          i += 1
+          processToId(process) = id
+          val input: KeyValue.Input =
+            (functionType, maybeValue) match {
+              case (FunctionType.Get,    None)        => KeyValue.Input.Get(key)
+              case (FunctionType.Put,    Some(value)) => KeyValue.Input.Put(key, KeyValue.state(value))
+              case (FunctionType.Append, Some(value)) => KeyValue.Input.Append(key, KeyValue.state(value))
+              case _ => throw new Exception(s"bogus parsing: $filename $functionType $maybeValue")
+            }
+          Entry.Call[KeyValue.State, KeyValue.Input](
+            value = input,
+            time = t(time),
+            id = id,
+            clientId = cid(process)
+          )
+
+        case (KeyValueEntry(process, EntryType.Ok, _, key, Some(output)), time) =>
+          val matchId = processToId(process)
+          processToId -= process
+          Entry.Return[KeyValue.State, KeyValue.Input](
+            value = KeyValue.state(output),
+            time = t(time),
+            id = matchId,
+            clientId = cid(process)
+          )
+
+        case other =>
+          throw new Exception(s"bogus parsing: $filename, $other")
+      }.toList
+
+    source.close()
+
+    events
+  }
 
   def apply(input: String): KeyValueEntry = 
     parseAll(root, input) match {
