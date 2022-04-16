@@ -6,6 +6,7 @@ import scala.collection.mutable.{BitSet => MBitset, Map => MMap}
 
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.{Executors, TimeUnit, Callable, CountDownLatch}
+import java.util.concurrent.atomic.AtomicLong
 
 enum Verbosity:
   case Debug
@@ -62,20 +63,30 @@ extension [S, T](specification: Specification[S, T]) {
       )
     }
 
-    val tasksCount = new CountDownLatch(partitionnedHistory.size)
-
+    val totalTasksCount = partitionnedHistory.size
+    
+    val tasksCountLatch = new CountDownLatch(totalTasksCount)
 
     partitionnedHistory.zipWithIndex.map { (history, i) =>
       threadPool.submit(
         new Callable[Unit] {
           def call(): Unit = {
-            val (ok, _) = checkSingle(history, killSwitch)
-            result = result && ok
-            if (!ok) {
+            val (isLinearizable, _) = checkSingle(history, killSwitch)
+            result = result && isLinearizable
+            if (!isLinearizable) {
               killSwitch.set(true)
             }
-            tasksCount.countDown()
-            println(s"[$ok] tasks to go: ${tasksCount.getCount}")
+            
+            tasksCountLatch.countDown()
+
+            if (verbosity == Verbosity.Debug) {
+              def leftPad(a: String)(length: Int, pad: Char): String =
+                (pad.toString * (length - a.length)) + a
+
+              val padCount = leftPad(i.toString)(length = totalTasksCount.toString.length, pad = ' ')
+
+              println(s"tasks [$padCount/$totalTasksCount] Linearizable: ${isLinearizable}")
+            }
           }
         }
       )
@@ -84,10 +95,10 @@ extension [S, T](specification: Specification[S, T]) {
     val allDone =
       timeout match {
         case Some(t) => 
-          tasksCount.await(t.toSeconds, TimeUnit.SECONDS)
+          tasksCountLatch.await(t.toSeconds, TimeUnit.SECONDS)
 
         case None =>
-          tasksCount.await()
+          tasksCountLatch.await()
           true
       }
       

@@ -8,19 +8,19 @@ import parser.KeyValueParser
 
 class KeyValueTest extends AnyFunSuite {
   
-
   List(
     "c01-bad",
     "c01-ok",
     "c10-bad",
     "c10-ok",
-    "c50-bad",
     "c50-ok",
+    "c50-bad", // this test takes a bit more time
   ).foreach(name =>
 
     test(name) {
+      println(s"\n-- $name --")
       val entries = KeyValueParser.parseFile(name)
-      val (obtained, _) = specification.checkEntries(entries)
+      val (obtained, _) = specification.checkEntries(entries, verbosity = Verbosity.Debug)
 
       val expected =
         if (name.endsWith("-bad")) CheckResult.Illegal
