@@ -10,10 +10,10 @@ class KeyValueTest extends AnyFunSuite {
   
 
   List(
-    // "c01-bad",
-    // "c01-ok",
-    // "c10-bad",
-    // "c10-ok",
+    "c01-bad",
+    "c01-ok",
+    "c10-bad",
+    "c10-ok",
     "c50-bad",
     "c50-ok",
   ).foreach(name =>
