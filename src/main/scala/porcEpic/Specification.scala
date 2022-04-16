@@ -65,11 +65,11 @@ object Entry {
   }
 }
 
-trait Specification[S, T]{
-  def initialState: S
-  def equal(state1: S, state2: S): Boolean = state1 == state2
-  def apply(state: S, input: T, output: S): (Boolean, S)
-  def describeOperation(input: T, output: S): String
+trait Specification[State, Input] {
+  def initialState: State
+  def equal(state1: State, state2: State): Boolean = state1 == state2
+  def apply(state: State, input: Input, output: State): (Boolean, State)
+  def describeOperation(input: Input, output: State): String
 }
 
 trait OperationSpecification[S, T] extends Specification[S, T] {

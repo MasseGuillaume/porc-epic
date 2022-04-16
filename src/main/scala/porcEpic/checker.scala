@@ -71,8 +71,11 @@ extension [S, T](specification: Specification[S, T]) {
           def call(): Unit = {
             val (ok, _) = checkSingle(history, killSwitch)
             result = result && ok
+            if (!ok) {
+              killSwitch.set(true)
+            }
             tasksCount.countDown()
-            // println("tasks to go: " + tasksCount.getCount)
+            println(s"[$ok] tasks to go: ${tasksCount.getCount}")
           }
         }
       )

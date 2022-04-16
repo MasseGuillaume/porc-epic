@@ -1,11 +1,12 @@
 package porcEpic
-package jepsen
+package integration
 
 import scala.io.Source
 
 import org.scalatest.funsuite.AnyFunSuite
 
 import specification.KeyValue._
+import parser.KeyValueParser
 
 class KeyValueTest extends AnyFunSuite {
 
@@ -35,7 +36,7 @@ class KeyValueTest extends AnyFunSuite {
   }
 
   def parse(filename: String): List[Entry[State, Input]] = {
-    import porcEpic.jepsen.KeyValueParser.{EntryType, FunctionType, KeyValueEntry}
+    import KeyValueParser.{EntryType, FunctionType, KeyValueEntry}
     import porcEpic.{fromLong => t}
 
     val source = Source.fromFile(s"porcupine/test_data/kv/${filename}.txt")
@@ -83,11 +84,11 @@ class KeyValueTest extends AnyFunSuite {
   }
 
   List(
-    "c01-bad",
-    "c01-ok",
-    "c10-bad",
-    "c10-ok",
-    // "c50-bad",
+    // "c01-bad",
+    // "c01-ok",
+    // "c10-bad",
+    // "c10-ok",
+    "c50-bad",
     // "c50-ok",
   ).foreach(name =>
 

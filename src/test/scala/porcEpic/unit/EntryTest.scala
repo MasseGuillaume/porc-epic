@@ -1,9 +1,11 @@
 package porcEpic
-
-import org.scalatest.funsuite.AnyFunSuite
+package unit
 
 import porcEpic.{fromLong => t}
+import TestData.{history, OperationKind}
 import OperationKind._
+
+import org.scalatest.funsuite.AnyFunSuite
 
 class EntryTest extends AnyFunSuite {
   
