@@ -72,7 +72,7 @@ extension [S, T](specification: Specification[S, T]) {
             val (ok, _) = checkSingle(history, killSwitch)
             result = result && ok
             tasksCount.countDown()
-            println("tasks to go: " + tasksCount.getCount)
+            // println("tasks to go: " + tasksCount.getCount)
           }
         }
       )
