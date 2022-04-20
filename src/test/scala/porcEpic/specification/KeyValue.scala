@@ -5,6 +5,9 @@ object KeyValue {
   opaque type State = String
   def state(value: String): State = value
 
+  opaque type Output = State
+  def output(value: String): Output = value
+
   extension (state: State) {
     def +(other: State): State = state + other
   }
@@ -18,9 +21,12 @@ object KeyValue {
     case class Append(key: String, value: State) extends Input
   }
 
-  val specification = new EntriesSpecification[State, Input]{
-    def partitionEntries(entries: List[Entry[State, Input]]): List[List[Entry[State, Input]]] = {
-      Entry.toOperations(entries)
+  val specification = new EntriesSpecification[State, Input, Output] {
+    override def partitionEntries(
+        entries: List[Entry[State, Input, Output]]
+    ): List[List[Entry[State, Input, Output]]] = {
+      Entry
+        .toOperations(entries)
         .groupBy(_.input.key)
         .values
         .map(Entry.fromOperations)

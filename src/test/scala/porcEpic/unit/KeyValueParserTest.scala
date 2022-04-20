@@ -1,8 +1,9 @@
 package porcEpic
+package unit
 
 import org.scalatest.funsuite.AnyFunSuite
 
-class KeyValueParseTest extends AnyFunSuite {
+class KeyValueParserTest extends AnyFunSuite {
 
   import parser.KeyValueParser
   import KeyValueParser._

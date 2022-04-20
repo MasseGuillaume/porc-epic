@@ -2,26 +2,26 @@ package porcEpic
 
 import scala.collection.mutable.StringBuilder
 
-type EntryLinkedList[S, T] = DoubleLinkedList[EntryNode[S, T]]
+type EntryLinkedList[State, Input, Output] = DoubleLinkedList[EntryNode[State, Input, Output]]
 
 object EntryLinkedList {
-  def apply[S, T](entries: List[Entry[S, T]]): EntryLinkedList[S, T] = {
-    var root: DoubleLinkedList[EntryNode[S, T]] = null
-    val matches = collection.mutable.Map.empty[Int, EntryLinkedList[S, T]]
+  def apply[State, Input, Output](entries: List[Entry[State, Input, Output]]): EntryLinkedList[State, Input, Output] = {
+    var root: DoubleLinkedList[EntryNode[State, Input, Output]] = null
+    val matches = collection.mutable.Map.empty[Int, EntryLinkedList[State, Input, Output]]
 
     entries.reverse.foreach{ elem => 
       val entry =
         elem match {
-          case r: Entry.Return[_, _] =>
+          case r: Entry.Return[_, _, _] =>
             val entry = 
-              new DoubleLinkedList[EntryNode[S, T]](
-                EntryNode.Return[S, T](r.id, r.value)
+              new DoubleLinkedList[EntryNode[State, Input, Output]](
+                EntryNode.Return[State, Input, Output](r.id, r.value)
               )
             matches(r.id) = entry
             entry
 
-          case c: Entry.Call[_, _] =>
-            new DoubleLinkedList[EntryNode[S, T]](
+          case c: Entry.Call[_, _, _] =>
+            new DoubleLinkedList[EntryNode[State, Input, Output]](
               EntryNode.Call(c.id, c.value, matches.getOrElse(c.id, throw new Exception("cannot find match")))
             )
         }
@@ -100,27 +100,27 @@ class DoubleLinkedList[T](
  * @param matches:  if it's a call it points to the return entry
  */
 
-sealed trait EntryNode[S, T] {
+sealed trait EntryNode[State, Input, Output] {
   val id: Int
 }
 object EntryNode {
-  case class Call[S, T](id: Int, value: T, matches: EntryLinkedList[S, T]) extends EntryNode[S, T] {
+  case class Call[State, Input, Output](id: Int, value: Input, matches: EntryLinkedList[State, Input, Output]) extends EntryNode[State, Input, Output] {
     override def toString: String = {
       s"Call($id, $value)"
     }
   }
-  case class Return[S, T](id: Int, value: S) extends EntryNode[S, T] {
+  case class Return[State, Input, Output](id: Int, value: Output) extends EntryNode[State, Input, Output] {
     override def toString: String = {
       s"Return($id, $value)"
     }
   }
 }
 
-extension [S, T](list: DoubleLinkedList[EntryNode[S, T]]) {
+extension [State, Input, Output](list: DoubleLinkedList[EntryNode[State, Input, Output]]) {
 
   def lift(): Unit = {
     list.elem match {
-      case c: EntryNode.Call[_, _] =>
+      case c: EntryNode.Call[_, _, _] =>
         import list._
         prev.next = next
         next.prev = prev
@@ -136,7 +136,7 @@ extension [S, T](list: DoubleLinkedList[EntryNode[S, T]]) {
 
   def unlift(): Unit = {
     list.elem match {
-      case c: EntryNode.Call[_, _] =>
+      case c: EntryNode.Call[_, _, _] =>
         import list._
 
         c.matches.prev.next = c.matches

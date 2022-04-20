@@ -5,13 +5,16 @@ object Register {
   opaque type State = Int
   def state(value: Int): State = value 
 
+  opaque type Output = State
+  def output(value: Int): Output = value 
+
   enum Input:
     case Put(value: State) extends Input
     case Get extends Input
 
   import Input._
 
-  val specification = new OperationSpecification[State, Input]{
+  val specification = new OperationSpecification[State, Input, Output]{
 
     def initialState: State = 0
 
@@ -28,10 +31,5 @@ object Register {
         case Get => s"get() -> $output"
       }
     }
-
-    def partitionOperations(
-      operations: List[Operation[State, Input]]
-    ): List[List[Operation[State, Input]]] =
-      List(operations)
   }
 }

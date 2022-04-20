@@ -8,7 +8,7 @@ opaque type ClientId = Int
 def cid(value: Int): ClientId = value
 
 object Operation {
-  def apply[S, T](call: Entry.Call[S, T], `return`: Entry.Return[S, T]): Operation[S, T] = 
+  def apply[State, Input, Output](call: Entry.Call[State, Input, Output], `return`: Entry.Return[State, Input, Output]): Operation[State, Input, Output] = 
     Operation(
       clientId = call.clientId,
       input = call.value,
@@ -18,44 +18,44 @@ object Operation {
     )
 }
 
-case class Operation[S, T](
+case class Operation[State, Input, Output](
   clientId: ClientId,
-  input: T,
+  input: Input,
   invocation: Time,
-  output: S,
+  output: Output,
   response: Time
 )
 
-sealed trait Entry[S, T] {
+sealed trait Entry[State, Input, Output] {
   val time: Time
   val id: Int
   val clientId: ClientId
 
-  def withId(id0: Int): Entry[S, T] = {
+  def withId(id0: Int): Entry[State, Input, Output] = {
     this match {
-      case c: Entry.Call[_, _]   => c.copy(id = id0)
-      case r: Entry.Return[_, _] => r.copy(id = id0)
+      case c: Entry.Call[_, _, _]   => c.copy(id = id0)
+      case r: Entry.Return[_, _, _] => r.copy(id = id0)
     }
   }
 }
 
 object Entry {
-  case class   Call[S, T](value: T, time: Time, id: Int, clientId: ClientId) extends Entry[S, T]
-  case class Return[S, T](value: S, time: Time, id: Int, clientId: ClientId) extends Entry[S, T]
+  case class   Call[State, Input, Output](value: Input, time: Time, id: Int, clientId: ClientId) extends Entry[State, Input, Output]
+  case class Return[State, Input, Output](value: Output, time: Time, id: Int, clientId: ClientId) extends Entry[State, Input, Output]
 
-  def fromOperations[S, T](history: List[Operation[S, T]]): List[Entry[S, T]] = {
+  def fromOperations[State, Input, Output](history: List[Operation[State, Input, Output]]): List[Entry[State, Input, Output]] = {
     history.zipWithIndex.flatMap ( (operation, index) =>
-      List[Entry[S, T]](
+      List[Entry[State, Input, Output]](
           Call(operation.input,  operation.invocation, index, operation.clientId),
         Return(operation.output, operation.response,   index, operation.clientId)
       )
     ).sorted
   }
 
-  def toOperations[S, T](history: List[Entry[S, T]]): List[Operation[S, T]] = {
+  def toOperations[State, Input, Output](history: List[Entry[State, Input, Output]]): List[Operation[State, Input, Output]] = {
     history.groupBy(_.id).map {
-      case (_, List(c: Entry.Call[_, _],   r: Entry.Return[_, _])) => Operation(c, r)
-      case (_, List(r: Entry.Return[_, _], c: Entry.Call[_, _])) => Operation(c, r)
+      case (_, List(c: Entry.Call[_, _, _],   r: Entry.Return[_, _, _])) => Operation(c, r)
+      case (_, List(r: Entry.Return[_, _, _], c: Entry.Call[_, _, _])) => Operation(c, r)
       case (id, entries) => 
         throw new Exception(
           s"""|history is not complete for id $id:
@@ -65,19 +65,19 @@ object Entry {
   }
 }
 
-trait Specification[State, Input] {
+trait Specification[State, Input, Output] {
   def initialState: State
   def equal(state1: State, state2: State): Boolean = state1 == state2
-  def apply(state: State, input: Input, output: State): (Boolean, State)
-  def describeOperation(input: Input, output: State): String
+  def apply(state: State, input: Input, output: Output): (Boolean, State)
+  def describeOperation(input: Input, output: Output): String
 }
 
-trait OperationSpecification[S, T] extends Specification[S, T] {
-  def partitionOperations(operations: List[Operation[S, T]]): List[List[Operation[S, T]]]
+trait OperationSpecification[State, Input, Output] extends Specification[State, Input, Output] {
+  def partitionOperations(operations: List[Operation[State, Input, Output]]): List[List[Operation[State, Input, Output]]] = List(operations)
 }
 
-trait EntriesSpecification[S, T] extends Specification[S, T] {
-  def partitionEntries(entries: List[Entry[S, T]]): List[List[Entry[S, T]]]
+trait EntriesSpecification[State, Input, Output] extends Specification[State, Input, Output] {
+  def partitionEntries(entries: List[Entry[State, Input, Output]]): List[List[Entry[State, Input, Output]]] = List(entries)
 }
 
 enum CheckResult:
@@ -85,12 +85,12 @@ enum CheckResult:
   case Ok
   case Illegal
 
-case class LinearizationInfo[S, T](
-  history: List[List[Entry[S, T]]],
+case class LinearizationInfo[State, Input, Output](
+  history: List[List[Entry[State, Input, Output]]],
   partialLinearizations: List[List[List[Int]]]
 )
 
 object LinearizationInfo {
-  def empty[S, T]: LinearizationInfo[S, T] = 
+  def empty[State, Input, Output]: LinearizationInfo[State, Input, Output] = 
     LinearizationInfo(Nil, Nil)
 }

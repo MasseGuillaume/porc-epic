@@ -12,35 +12,34 @@ enum Verbosity:
   case Debug
   case Error
 
-extension [S, T](specification: OperationSpecification[S, T]) {
+extension [State, Input, Output](specification: OperationSpecification[State, Input, Output]) {
   def checkOperations(
-    history: List[Operation[S, T]],
+    history: List[Operation[State, Input, Output]],
     timeout: Option[FiniteDuration] = None,
     verbosity: Verbosity = Verbosity.Error
-  ): (CheckResult, LinearizationInfo[S, T]) = {
+  ): (CheckResult, LinearizationInfo[State, Input, Output]) = {
     val partitions = specification.partitionOperations(history).map(Entry.fromOperations)
     specification.checkParallel(partitions, timeout, verbosity)
   }
 }
 
-extension [S, T](specification: EntriesSpecification[S, T]) {
+extension [State, Input, Output](specification: EntriesSpecification[State, Input, Output]) {
   def checkEntries(
-    history: List[Entry[S, T]],
+    history: List[Entry[State, Input, Output]],
     timeout: Option[FiniteDuration] = None,
     verbosity: Verbosity = Verbosity.Error
-  ): (CheckResult, LinearizationInfo[S, T]) = {
+  ): (CheckResult, LinearizationInfo[State, Input, Output]) = {
     val partitions = specification.partitionEntries(history).map(renumber)
     specification.checkParallel(partitions, timeout, verbosity)
   }
 }
 
-
-extension [S, T](specification: Specification[S, T]) {
+extension [State, Input, Output](specification: Specification[State, Input, Output]) {
   def checkParallel(
-    partitionnedHistory: List[List[Entry[S, T]]],
+    partitionnedHistory: List[List[Entry[State, Input, Output]]],
     timeout: Option[FiniteDuration],
     verbosity: Verbosity
-  ): (CheckResult, LinearizationInfo[S, T]) = {
+  ): (CheckResult, LinearizationInfo[State, Input, Output]) = {
 
     val processors = Runtime.getRuntime().availableProcessors()
     val threadPool = Executors.newFixedThreadPool(processors)
@@ -80,9 +79,6 @@ extension [S, T](specification: Specification[S, T]) {
             tasksCountLatch.countDown()
 
             if (verbosity == Verbosity.Debug) {
-              def leftPad(a: String)(length: Int, pad: Char): String =
-                (pad.toString * (length - a.length)) + a
-
               val padCount = leftPad(i.toString)(length = totalTasksCount.toString.length, pad = ' ')
 
               println(s"tasks [$padCount/$totalTasksCount] Linearizable: ${isLinearizable}")
@@ -108,22 +104,22 @@ extension [S, T](specification: Specification[S, T]) {
         else CheckResult.Illegal
 
       // TODO
-      val info = LinearizationInfo.empty[S, T]
+      val info = LinearizationInfo.empty[State, Input, Output]
       (resultOutput, info)
 
     } else {
-      val info = LinearizationInfo[S, T](
+      val info = LinearizationInfo[State, Input, Output](
         history = Nil,
         partialLinearizations = Nil
       )
 
-      (CheckResult.TimedOut, LinearizationInfo.empty[S, T])
+      (CheckResult.TimedOut, LinearizationInfo.empty[State, Input, Output])
     }
   }
 
-  private def checkSingle(history: List[Entry[S, T]], killSwitch: AtomicBoolean): (Boolean, Array[Array[Int]]) = {
-    case class CacheEntry(linearized: MBitset, state: S)
-    case class CallEntry(entry: EntryLinkedList[S, T], state: S)
+  private def checkSingle(history: List[Entry[State, Input, Output]], killSwitch: AtomicBoolean): (Boolean, Array[Array[Int]]) = {
+    case class CacheEntry(linearized: MBitset, state: State)
+    case class CallEntry(entry: EntryLinkedList[State, Input, Output], state: State)
 
     extension (bitset: MBitset) {
       def set(v: Int): MBitset = bitset += v
@@ -148,9 +144,9 @@ extension [S, T](specification: Specification[S, T]) {
     var state = specification.initialState
 
     val buggy = 
-      DoubleLinkedList[EntryNode[S, T]](
-        EntryNode.Return[S, T](
-          value = null.asInstanceOf[S],
+      DoubleLinkedList[EntryNode[State, Input, Output]](
+        EntryNode.Return[State, Input, Output](
+          value = null.asInstanceOf[Output],
           id = -1
         )
       )
@@ -161,11 +157,11 @@ extension [S, T](specification: Specification[S, T]) {
         return (false, longest)
       }
       entry.elem match {
-        case node: EntryNode.Call[_, _] =>
+        case node: EntryNode.Call[_, _, _] =>
           val matching = 
             node.matches.elem match {
-              case r: EntryNode.Return[_, _] => r.asInstanceOf[EntryNode.Return[S, T]]
-              case _: EntryNode.Call[_, _]   => throw new Exception("call matching should be a return")
+              case r: EntryNode.Return[_, _, _] => r.asInstanceOf[EntryNode.Return[State, Input, Output]]
+              case _: EntryNode.Call[_, _, _]   => throw new Exception("call matching should be a return")
             }
 
           val (isLinearizable, newState) = specification.apply(state, node.value, matching.value)
@@ -188,7 +184,7 @@ extension [S, T](specification: Specification[S, T]) {
             entry = entry.next
           }
 
-        case r: EntryNode.Return[_, _] =>
+        case r: EntryNode.Return[_, _, _] =>
           val callsLength = calls.length
           if (callsLength == 0) {
             return (false, longest)
@@ -233,8 +229,7 @@ extension [S, T](specification: Specification[S, T]) {
   }
 }
 
-
-def renumber[S, T](events: List[Entry[S, T]]): List[Entry[S, T]] = {
+def renumber[State, Input, Output](events: List[Entry[State, Input, Output]]): List[Entry[State, Input, Output]] = {
   val renumbering = MMap.empty[Int, Int]
   var id = 0
 
@@ -250,13 +245,13 @@ def renumber[S, T](events: List[Entry[S, T]]): List[Entry[S, T]] = {
   }
 }
 
-given EntryOrderingByTime[S, T]: Ordering[Entry[S, T]] =
+given EntryOrderingByTime[State, Input, Output]: Ordering[Entry[State, Input, Output]] =
   Ordering.by(e =>
     (
       toLong(e.time),
       e match {
-        case _: Entry.Call[_, _] => 0
-        case _: Entry.Return[_, _] => 1
+        case _: Entry.Call[_, _, _] => 0
+        case _: Entry.Return[_, _, _] => 1
       }
     )
   )
@@ -276,3 +271,6 @@ class Stack[T](var xs: List[T]) {
   def foreach(f: T => Unit): Unit = xs.foreach(f)
   def zipWithIndex: List[(T, Int)] = xs.zipWithIndex
 }
+
+private [porcEpic] def leftPad(a: String)(length: Int, pad: Char): String =
+  (pad.toString * (length - a.length)) + a
