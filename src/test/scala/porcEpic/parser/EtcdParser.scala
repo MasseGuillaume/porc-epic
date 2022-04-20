@@ -76,8 +76,8 @@ object EtcdParser extends RegexParsers {
           val output: Etcd.Output =
             (entry, function, value) match {
               case (Info, _     , Val.Timeout)        => Etcd.Output.Timeout
-              case (Fail, _     , Val.CasValue(_, _)) => Etcd.Output.CasFail
-              case (Ok  , _     , Val.CasValue(_, _)) => Etcd.Output.CasOk
+              case (Fail, _     , Val.CasValue(_, _)) => Etcd.Output.Cas(ok = false)
+              case (Ok  , _     , Val.CasValue(_, _)) => Etcd.Output.Cas(ok = true)
               case (Ok  , Read  , Val.Value(value))   => Etcd.Output.Read(Some(state(value)))
               case (Ok  , Read  , Val.Nil)            => Etcd.Output.Read(None)
               case (Ok  , Write , Val.Value(value))   => Etcd.Output.Write(state(value))

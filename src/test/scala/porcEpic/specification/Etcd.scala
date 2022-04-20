@@ -12,8 +12,7 @@ object Etcd {
 
   enum Output:
     case Timeout extends Output
-    case CasFail extends Output
-    case CasOk extends Output
+    case Cas(ok: Boolean) extends Output
     case Read(value: Option[State]) extends Output
     case Write(value: State) extends Output
 
@@ -22,28 +21,39 @@ object Etcd {
 
     def apply(state: Option[State], input: Input, output: Output): (Boolean, Option[State]) = {
       (input, output) match {
-        case (Input.Read        , Output.Read(outputState)) => (state == outputState, state)
-        case (Input.Write(value), _)                        => (true, Some(value))
-        case (_                 , Output.Timeout)           => (true, state)
-        case (Input.Cas(expected, value), Output.CasFail)   => (Some(expected) != state, state)
-        case (Input.Cas(expected, value), Output.CasOk) => {
-          val ok = Some(expected) == state
+        case (Input.Read                , Output.Read(outputState)) => (state == outputState, state)
+        case (Input.Read                , Output.Timeout)           => (true, state)
+
+        case (Input.Write(value)        , _)                        => (true, Some(value))
+
+        case (Input.Cas(expected, value), _) => {
+          val ok = 
+            output match {
+              case Output.Cas(ok) => if (ok) Some(expected) == state else Some(expected) != state
+              case Output.Timeout => true
+              case _              => throw new Exception(s"invalid cas output: $output")
+            }
+            
           val result =
             if (Some(expected) == state) Some(value)
             else state
 
           (ok, result)
         }
+        
         case _ => throw new Exception(s"invalid history: $state, $input, $output")
       }
     }
 
     def describeOperation(input: Input, output: Output): String = {
       (input, output) match {
-        case (Input.Read, _)                 => ???
-        case (Input.Write(value), _)         => ???
-        case (Input.Cas(expected, value), _) => ???
+        case (Input.Read                , Output.Read(state))  => s"""read() -> ${state.getOrElse("nil")}"""
+        case (Input.Write(value)        , Output.Write(state)) => s"write(${state})"
+        case (Input.Cas(expected, value), Output.Cas(ok))      => s"cas($expected, $value) -> $ok"
+        case (_                         , Output.Timeout)      => "timeout"
+        case _                                                 => throw new Exception("invalid operation")
       }
     }
   }
 }
+
