@@ -33,7 +33,7 @@ object EtcdParser extends RegexParsers {
     value: Val
   )
 
-  def parseFile(index: String): List[Entry[Option[Etcd.State], Etcd.Input, Etcd.Output]] = {
+  def parseFile(index: String): List[Entry[Etcd.Input, Etcd.Output]] = {
     import porcEpic.{fromLong => t}
 
     import FunctionType._
@@ -61,7 +61,7 @@ object EtcdParser extends RegexParsers {
               case _ => throw new Exception(s"bogus parsing: $filename $functionType $value")
             }
 
-          Entry.Call[Option[Etcd.State], Etcd.Input, Etcd.Output](
+          Entry.Call[Etcd.Input, Etcd.Output](
             value = input,
             time = t(time),
             id = id,
@@ -84,7 +84,7 @@ object EtcdParser extends RegexParsers {
               case _                                  => throw new Exception(s"unexpected return entry: $entry, $function, $value")
             }
 
-          Entry.Return[Option[Etcd.State], Etcd.Input, Etcd.Output](
+          Entry.Return[Etcd.Input, Etcd.Output](
             value = output,
             time = t(time),
             id = matchId,
@@ -97,7 +97,7 @@ object EtcdParser extends RegexParsers {
     val lastTime = events.length
     val unfinishedEvents =
       processToId.toList.zipWithIndex.map { case ((process, matchId), time) =>
-        Entry.Return[Option[Etcd.State], Etcd.Input, Etcd.Output](
+        Entry.Return[Etcd.Input, Etcd.Output](
           value = Etcd.Output.Unknown,
           time = t(lastTime + time),
           id = matchId,

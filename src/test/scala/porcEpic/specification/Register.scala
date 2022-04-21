@@ -25,11 +25,11 @@ object Register {
       }
     }
 
-    def describeOperation(input: Input, output: State): String = {
-      input match {
-        case Put(value) => s"put($value)"
-        case Get => s"get() -> $output"
-      }
-    }
+    // def describeOperation(input: Input, output: State): String = {
+    //   input match {
+    //     case Put(value) => s"put($value)"
+    //     case Get => s"get() -> $output"
+    //   }
+    // }
   }
 }

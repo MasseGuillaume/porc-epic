@@ -34,11 +34,11 @@ object SetModel {
       }
     }
 
-    def describeOperation(input: Input, output: Output): String = {
-      input match {
-        case Read         => s"read() -> $output"
-        case Write(state) => s"write($state)"
-      }
-    }
+    // def describeOperation(input: Input, output: Output): String = {
+    //   input match {
+    //     case Read         => s"read() -> $output"
+    //     case Write(state) => s"write($state)"
+    //   }
+    // }
   }
 }

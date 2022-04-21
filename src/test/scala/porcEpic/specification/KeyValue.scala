@@ -22,9 +22,7 @@ object KeyValue {
   }
 
   val specification = new EntriesSpecification[State, Input, Output] {
-    override def partitionEntries(
-        entries: List[Entry[State, Input, Output]]
-    ): List[List[Entry[State, Input, Output]]] = {
+    override def partitionEntries(entries: List[Entry[Input, Output]]): List[List[Entry[Input, Output]]] = {
       Entry
         .toOperations(entries)
         .groupBy(_.input.key)
@@ -40,12 +38,12 @@ object KeyValue {
         case Input.Append(key, value) => (true, state + value)
       }
     }
-    def describeOperation(input: Input, output: State): String = {
-      input match {
-        case Input.Get(key)           => s"get($key) -> $output"
-        case Input.Put(key, value)    => s"put($key, $value)"
-        case Input.Append(key, value) => s"append($key, $value)"
-      }
-    }
+    // def describeOperation(input: Input, output: State): String = {
+    //   input match {
+    //     case Input.Get(key)           => s"get($key) -> $output"
+    //     case Input.Put(key, value)    => s"put($key, $value)"
+    //     case Input.Append(key, value) => s"append($key, $value)"
+    //   }
+    // }
   }
 }

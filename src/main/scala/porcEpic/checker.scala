@@ -14,10 +14,10 @@ enum Verbosity:
 
 extension [State, Input, Output](specification: OperationSpecification[State, Input, Output]) {
   def checkOperations(
-    history: List[Operation[State, Input, Output]],
+    history: List[Operation[Input, Output]],
     timeout: Option[FiniteDuration] = None,
     verbosity: Verbosity = Verbosity.Error
-  ): (CheckResult, LinearizationInfo[State, Input, Output]) = {
+  ): (CheckResult, LinearizationInfo[Input, Output]) = {
     val partitions = specification.partitionOperations(history).map(Entry.fromOperations)
     specification.checkParallel(partitions, timeout, verbosity)
   }
@@ -25,10 +25,10 @@ extension [State, Input, Output](specification: OperationSpecification[State, In
 
 extension [State, Input, Output](specification: EntriesSpecification[State, Input, Output]) {
   def checkEntries(
-    history: List[Entry[State, Input, Output]],
+    history: List[Entry[Input, Output]],
     timeout: Option[FiniteDuration] = None,
     verbosity: Verbosity = Verbosity.Error
-  ): (CheckResult, LinearizationInfo[State, Input, Output]) = {
+  ): (CheckResult, LinearizationInfo[Input, Output]) = {
     val partitions = specification.partitionEntries(history).map(renumber)
     specification.checkParallel(partitions, timeout, verbosity)
   }
@@ -36,10 +36,10 @@ extension [State, Input, Output](specification: EntriesSpecification[State, Inpu
 
 extension [State, Input, Output](specification: Specification[State, Input, Output]) {
   def checkParallel(
-    partitionnedHistory: List[List[Entry[State, Input, Output]]],
+    partitionnedHistory: List[List[Entry[Input, Output]]],
     timeout: Option[FiniteDuration],
     verbosity: Verbosity
-  ): (CheckResult, LinearizationInfo[State, Input, Output]) = {
+  ): (CheckResult, LinearizationInfo[Input, Output]) = {
 
     val totalTasksCount = partitionnedHistory.size
 
@@ -103,7 +103,7 @@ extension [State, Input, Output](specification: Specification[State, Input, Outp
         if (result) CheckResult.Ok
         else CheckResult.Illegal
 
-      val info = LinearizationInfo[State, Input, Output](
+      val info = LinearizationInfo[Input, Output](
         history = partitionnedHistory,
         partialLinearizations = longest.map(_.distinct).toList
       )
@@ -111,13 +111,13 @@ extension [State, Input, Output](specification: Specification[State, Input, Outp
       (resultOutput, info)
 
     } else {
-      (CheckResult.TimedOut, LinearizationInfo.empty[State, Input, Output])
+      (CheckResult.TimedOut, LinearizationInfo.empty[Input, Output])
     }
   }
 
-  private def checkSingle(history: List[Entry[State, Input, Output]], killSwitch: AtomicBoolean): (Boolean, List[List[Int]]) = {
+  private def checkSingle(history: List[Entry[Input, Output]], killSwitch: AtomicBoolean): (Boolean, List[List[Int]]) = {
     case class CacheEntry(linearized: MBitset, state: State)
-    case class CallEntry(entry: EntryLinkedList[State, Input, Output], state: State)
+    case class CallEntry(entry: EntryLinkedList[Input, Output], state: State)
 
     extension (bitset: MBitset) {
       def set(v: Int): MBitset = bitset += v
@@ -142,8 +142,8 @@ extension [State, Input, Output](specification: Specification[State, Input, Outp
     var state = specification.initialState
 
     val buggy = 
-      DoubleLinkedList[EntryNode[State, Input, Output]](
-        EntryNode.Return[State, Input, Output](
+      DoubleLinkedList[EntryNode[Input, Output]](
+        EntryNode.Return[Input, Output](
           value = null.asInstanceOf[Output],
           id = -1
         )
@@ -155,11 +155,11 @@ extension [State, Input, Output](specification: Specification[State, Input, Outp
         return (false, longest.toList)
       }
       entry.elem match {
-        case node: EntryNode.Call[_, _, _] =>
+        case node: EntryNode.Call[_, _] =>
           val matching = 
             node.matches.elem match {
-              case r: EntryNode.Return[_, _, _] => r.asInstanceOf[EntryNode.Return[State, Input, Output]]
-              case _: EntryNode.Call[_, _, _]   => throw new Exception("call matching should be a return")
+              case r: EntryNode.Return[_, _] => r.asInstanceOf[EntryNode.Return[Input, Output]]
+              case _: EntryNode.Call[_, _]   => throw new Exception("call matching should be a return")
             }
 
           val (isLinearizable, newState) = specification.apply(state, node.value, matching.value)
@@ -182,7 +182,7 @@ extension [State, Input, Output](specification: Specification[State, Input, Outp
             entry = entry.next
           }
 
-        case r: EntryNode.Return[_, _, _] =>
+        case r: EntryNode.Return[_, _] =>
           val callsLength = calls.length
           if (callsLength == 0) {
             return (false, longest.toList.filter(_ != null))
@@ -220,7 +220,7 @@ extension [State, Input, Output](specification: Specification[State, Input, Outp
   }
 }
 
-def renumber[State, Input, Output](events: List[Entry[State, Input, Output]]): List[Entry[State, Input, Output]] = {
+def renumber[Input, Output](events: List[Entry[Input, Output]]): List[Entry[Input, Output]] = {
   val renumbering = MMap.empty[Int, Int]
   var id = 0
 
@@ -236,13 +236,13 @@ def renumber[State, Input, Output](events: List[Entry[State, Input, Output]]): L
   }
 }
 
-given EntryOrderingByTime[State, Input, Output]: Ordering[Entry[State, Input, Output]] =
+given EntryOrderingByTime[Input, Output]: Ordering[Entry[Input, Output]] =
   Ordering.by(e =>
     (
       toLong(e.time),
       e match {
-        case _: Entry.Call[_, _, _] => 0
-        case _: Entry.Return[_, _, _] => 1
+        case _: Entry.Call[_, _] => 0
+        case _: Entry.Return[_, _] => 1
       }
     )
   )

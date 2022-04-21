@@ -11,7 +11,7 @@ class SetTest extends AnyFunSuite {
   import Input._
 
   test("set 01") {
-    val ops = List[Operation[State, Input, Output]](
+    val ops = List[Operation[Input, Output]](
       Operation(
         clientId = cid(0), 
         input = Input.Write(state(100)),
@@ -39,7 +39,7 @@ class SetTest extends AnyFunSuite {
   }
 
   test("set 02") {
-    val ops = List[Operation[State, Input, Output]](
+    val ops = List[Operation[Input, Output]](
       Operation(
         clientId = cid(0), 
         input = Input.Write(state(100)),
@@ -67,7 +67,7 @@ class SetTest extends AnyFunSuite {
   }
 
   test("set 03") {
-    val ops = List[Operation[State, Input, Output]](
+    val ops = List[Operation[Input, Output]](
       Operation(
         clientId = cid(0), 
         input = Input.Write(state(100)),
@@ -95,7 +95,7 @@ class SetTest extends AnyFunSuite {
   }
 
   test("set 04") {
-    val ops = List[Operation[State, Input, Output]](
+    val ops = List[Operation[Input, Output]](
       Operation(
         clientId = cid(0), 
         input = Input.Write(state(1)),

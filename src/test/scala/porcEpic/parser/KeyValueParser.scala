@@ -26,7 +26,7 @@ object KeyValueParser extends RegexParsers {
     value: Option[String]
   )
 
-  def parseFile(filename: String): List[Entry[KeyValue.State, KeyValue.Input, KeyValue.Output]] = {
+  def parseFile(filename: String): List[Entry[KeyValue.Input, KeyValue.Output]] = {
     import porcEpic.{fromLong => t}
 
     val source = Source.fromFile(s"porcupine/test_data/kv/${filename}.txt")
@@ -34,7 +34,7 @@ object KeyValueParser extends RegexParsers {
 
     val processToId = collection.mutable.Map.empty[Int, Int]
     var i = 0
-    val events: List[Entry[KeyValue.State, KeyValue.Input, KeyValue.Output]] = 
+    val events: List[Entry[KeyValue.Input, KeyValue.Output]] = 
       entries.zipWithIndex.map {
         case (KeyValueEntry(process, EntryType.Invoke, functionType, key, maybeValue), time) =>
           val id = i
@@ -47,7 +47,7 @@ object KeyValueParser extends RegexParsers {
               case (FunctionType.Append, Some(value)) => KeyValue.Input.Append(key, KeyValue.state(value))
               case _ => throw new Exception(s"bogus parsing: $filename $functionType $maybeValue")
             }
-          Entry.Call[KeyValue.State, KeyValue.Input, KeyValue.Output](
+          Entry.Call[KeyValue.Input, KeyValue.Output](
             value = input,
             time = t(time),
             id = id,
@@ -57,7 +57,7 @@ object KeyValueParser extends RegexParsers {
         case (KeyValueEntry(process, EntryType.Ok, _, key, Some(output)), time) =>
           val matchId = processToId(process)
           processToId -= process
-          Entry.Return[KeyValue.State, KeyValue.Input, KeyValue.Output](
+          Entry.Return[KeyValue.Input, KeyValue.Output](
             value = KeyValue.output(output),
             time = t(time),
             id = matchId,
