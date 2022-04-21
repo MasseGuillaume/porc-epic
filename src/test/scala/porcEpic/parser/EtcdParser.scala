@@ -44,14 +44,14 @@ object EtcdParser extends RegexParsers {
     val source = Source.fromFile(s"porcupine/test_data/jepsen/etcd_${filename}.log")
     val entries = source.getLines.map(parse)
 
-    val processToId = collection.mutable.Map.empty[Int, Int]
+    val processToId = collection.mutable.Map.empty[Int, OperationId]
     var i = 0
     val events = 
       entries.zipWithIndex.map {
         case (EtcdEntry(process, EntryType.Invoke, function, value), time) =>
           val id = i
           i += 1
-          processToId(process) = id
+          processToId(process) = opid(id)
 
           val input =
             (function, value) match {
@@ -64,7 +64,7 @@ object EtcdParser extends RegexParsers {
           Entry.Call[Etcd.Input, Etcd.Output](
             value = input,
             time = t(time),
-            id = id,
+            id = opid(id),
             clientId = cid(process)
           )
 

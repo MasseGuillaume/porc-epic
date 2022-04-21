@@ -1,72 +1,103 @@
 package porcEpic
 
-case class HistoryElement(
-  clientId: ClientId,
-  invocation: Time,
-  response: Time,
-  description: String
+import scala.reflect.ClassTag
+
+
+import io.circe.generic.extras._, io.circe.syntax._
+implicit val config: Configuration = Configuration.default.withSnakeCaseMemberNames
+
+object HistoryElement {
+  def apply[I, O](
+      operation: Operation[I, O],
+      describe: Operation[I, O] => String,
+  ): HistoryElement =
+    new HistoryElement(
+      clientId = operation.clientId,
+      invocation = operation.invocation,
+      response = operation.response,
+      description = describe(operation)
+    )
+}
+
+@ConfiguredJsonCodec case class HistoryElement(
+    clientId: ClientId,
+    invocation: Time,
+    response: Time,
+    description: String
 )
 
-object HistoryElement 
+@ConfiguredJsonCodec case class LinearizationStep(
+    index: OperationId,
+    stateDescription: String
+)
 
-case class LinearizationStep(
-  Index: Int,
-  StateDescription: String
+@ConfiguredJsonCodec case class PartitionVisualizationData(
+    history: List[HistoryElement],
+    partialLinearizations: List[List[LinearizationStep]],
+    largestIndex: Map[Int, Int]
 )
-case class PartitionVisualizationData(
-  History: List[HistoryElement],
-  PartialLinearizations: List[List[LinearizationStep]],
-  Largest: Map[Int, Int]
-)
+
 type VisualizationData = List[PartitionVisualizationData]
 
-trait Describe[T]:
-  def describe: String
+extension [S, I, O](specification: Specification[S, I, O])(using ci: ClassTag[I], co: ClassTag[O]) {
+  def visualize(
+      info: LinearizationInfo[I, O],
+      path: String
+  ): Unit = {}
 
+  def visualize(
+      info: LinearizationInfo[I, O],
+      describeOperation: Operation[I, O] => String,
+      describeState: S => String,
+  ): VisualizationData = {
 
-extension [State, Input, Output] (specification: Specification[State, Input, Output])(using describe: Describe[Operation[Input, Output]]) {
-  def visualize(info: LinearizationInfo[Input, Output], path: String): Unit = {
+    info.history.zipWithIndex.map { (partition, i) =>
+      val n = partition.length / 2
+      val callValue = Array.ofDim[I](n)
+      val returnValue = Array.ofDim[O](n)
+      val operations = Entry.toOperations(partition)
 
-  }
+      operations.foreach { operation =>
+        callValue(toInt(operation.id)) = operation.input
+        returnValue(toInt(operation.id)) = operation.output
+      }
 
-  private def computeVisualizationData(info: LinearizationInfo[Input, Output]): VisualizationData = {
-    // info.history.map { partition =>
-    //   val n = partition.length / 2
-    //   // val history = Array.ofDim[HistoryElement](n)
+      val largestIndex = scala.collection.mutable.Map.empty[Int, Int]
+      val largestSize = Array.ofDim[Int](n)
       
-    //   val callValue = scala.collection.mutable.Map.empty[Int, Input]
-    //   val returnValue = scala.collection.mutable.Map.empty[Int, Output]
 
+      val partialLinearizations =
+        info.partialLinearizations(i).sortBy(_.length).zipWithIndex.map{ (partial, i) =>
+          val linearization = Array.ofDim[LinearizationStep](partial.length)
+          var state = specification.initialState
+          partial.zipWithIndex.foreach { (histId, j) =>
+            val (isLinearizable, nextState) = 
+              specification.apply(
+                state = state,
+                input = callValue(toInt(histId)),
+                output = returnValue(toInt(histId))
+              )
+            state = nextState
+            if (!isLinearizable) {
+              throw new Exception("valid partial linearization returned non-ok result from model step")
+            }
+            linearization(j) = LinearizationStep(
+              index = histId,
+              stateDescription = describeState(state)
+            )
+            if (largestSize(toInt(histId)) < partial.length) {
+              largestSize(toInt(histId)) = partial.length
+              largestIndex(toInt(histId)) = i
+            }
+          }
+          linearization.toList
+        }
 
-    //   Entry.toOperations(partition).sortBy(_.id).map( operation =>
-    //     HistoryElement(
-    //       ClientId = operation.clientId
-    //       Start = operation.Start
-    //       End = 
-    //       Description = 
-
-    //       clientId
-    //       invocation
-    //       response
-    //       description
-    //     )
-    //   )
-
-    //     clientId: ClientId,
-    //     input: Input,
-    //     invocation: Time,
-    //     output: Output,
-    //     response: Time
-    //   }
-
-      // partition.foreach {
-      //   case call: Entry.Call[_, _, _] =>
-      //     history(call.id)
-      //   case ret: Entry.Return[_, _, _] =>
-      // }
-
-      ???
-
-    // }
+      PartitionVisualizationData(
+        history = operations.map(operation => HistoryElement(operation, describeOperation)),
+        partialLinearizations = partialLinearizations,
+        largestIndex = largestIndex.toMap
+      )
+    }
   }
 }

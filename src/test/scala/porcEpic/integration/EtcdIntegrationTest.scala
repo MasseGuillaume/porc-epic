@@ -8,6 +8,19 @@ import parser.EtcdParser
 
 class EtcdTest extends AnyFunSuite {
 
+  def describeOperation(operation: Operation[Input, Output]): String =
+    (operation.input, operation.output) match {
+      case (Input.Read                , Output.Read(state))  => s"""read() -> ${state.getOrElse("nil")}"""
+      case (Input.Write(value)        , Output.Write(state)) => s"write(${state})"
+      case (Input.Cas(expected, value), Output.Cas(ok))      => s"cas($expected, $value) -> $ok"
+      case (_                         , Output.Timeout)      => "timeout"
+      case (_                         , Output.Unknown)      => "unknown"
+      case _                                                 => throw new Exception("invalid operation")
+    }
+  
+  def describeState(state: Option[State]): String =
+    state.fold("nil")(_.toString)
+
   // 102
   (0 to 102)
     .filter(_ == 2)
@@ -20,7 +33,19 @@ class EtcdTest extends AnyFunSuite {
       // println(s"\n-- etcd $name --")
       val entries = EtcdParser.parseFile(name)
       val (obtained, info) = specification.checkEntries(entries)//, verbosity = Verbosity.Debug)
-      println(info.partialLinearizations.map(_.map(_.toList).toList).toList)
+
+      val data = 
+        specification.visualize(
+          info,
+          describeOperation,
+          describeState
+        )
+
+      data.head.history.foreach(println)
+
+
+
+      
       val expected = 
         if (!results(name)) CheckResult.Illegal
         else CheckResult.Ok

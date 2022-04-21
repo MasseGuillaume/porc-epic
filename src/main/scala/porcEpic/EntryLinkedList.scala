@@ -7,7 +7,7 @@ type EntryLinkedList[Input, Output] = DoubleLinkedList[EntryNode[Input, Output]]
 object EntryLinkedList {
   def apply[State, Input, Output](entries: List[Entry[Input, Output]]): EntryLinkedList[Input, Output] = {
     var root: DoubleLinkedList[EntryNode[Input, Output]] = null
-    val matches = collection.mutable.Map.empty[Int, EntryLinkedList[Input, Output]]
+    val matches = collection.mutable.Map.empty[OperationId, EntryLinkedList[Input, Output]]
 
     entries.reverse.foreach{ elem => 
       val entry =
@@ -101,15 +101,15 @@ class DoubleLinkedList[T](
  */
 
 sealed trait EntryNode[Input, Output] {
-  val id: Int
+  val id: OperationId
 }
 object EntryNode {
-  case class Call[Input, Output](id: Int, value: Input, matches: EntryLinkedList[Input, Output]) extends EntryNode[Input, Output] {
+  case class Call[Input, Output](id: OperationId, value: Input, matches: EntryLinkedList[Input, Output]) extends EntryNode[Input, Output] {
     override def toString: String = {
       s"Call($id, $value)"
     }
   }
-  case class Return[Input, Output](id: Int, value: Output) extends EntryNode[Input, Output] {
+  case class Return[Input, Output](id: OperationId, value: Output) extends EntryNode[Input, Output] {
     override def toString: String = {
       s"Return($id, $value)"
     }

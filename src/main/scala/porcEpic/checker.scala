@@ -47,7 +47,7 @@ extension [State, Input, Output](specification: Specification[State, Input, Outp
     val threadPool = Executors.newFixedThreadPool(processors)
     var result = true
     var timedout = false
-    val longest = Array.ofDim[List[List[Int]]](totalTasksCount)
+    val longest = Array.ofDim[List[List[OperationId]]](totalTasksCount)
     val killSwitch = new AtomicBoolean(false)
 
     timeout.foreach { t =>
@@ -115,13 +115,13 @@ extension [State, Input, Output](specification: Specification[State, Input, Outp
     }
   }
 
-  private def checkSingle(history: List[Entry[Input, Output]], killSwitch: AtomicBoolean): (Boolean, List[List[Int]]) = {
+  private def checkSingle(history: List[Entry[Input, Output]], killSwitch: AtomicBoolean): (Boolean, List[List[OperationId]]) = {
     case class CacheEntry(linearized: MBitset, state: State)
     case class CallEntry(entry: EntryLinkedList[Input, Output], state: State)
 
     extension (bitset: MBitset) {
-      def set(v: Int): MBitset = bitset += v
-      def clear(v: Int): MBitset = bitset -= v
+      def set(v: OperationId): MBitset = bitset += toInt(v)
+      def clear(v: OperationId): MBitset = bitset -= toInt(v)
     }
 
     var entry = EntryLinkedList(history)
@@ -138,14 +138,14 @@ extension [State, Input, Output](specification: Specification[State, Input, Outp
     }
 
     var calls = Stack.empty[CallEntry]
-    val longest = Array.ofDim[List[Int]](n)
+    val longest = Array.ofDim[List[OperationId]](n)
     var state = specification.initialState
 
     val buggy = 
       DoubleLinkedList[EntryNode[Input, Output]](
         EntryNode.Return[Input, Output](
           value = null.asInstanceOf[Output],
-          id = -1
+          id = opid(-1)
         )
       )
     val headEntry = buggy.insertBefore(entry)
@@ -187,14 +187,14 @@ extension [State, Input, Output](specification: Specification[State, Input, Outp
           if (callsLength == 0) {
             return (false, longest.toList.filter(_ != null))
           }
-          var seq: List[Int] = null
+          var seq: List[OperationId] = null
           calls.foreach { v =>
-            if (longest(v.entry.elem.id) == null || 
-                callsLength > longest(v.entry.elem.id).length) {
+            if (longest(toInt(v.entry.elem.id)) == null || 
+                callsLength > longest(toInt(v.entry.elem.id)).length) {
               if (seq == null) {
                 seq = calls.reverse.map(_.entry.elem.id)
               }
-              longest(v.entry.elem.id) = seq
+              longest(toInt(v.entry.elem.id)) = seq
             }
           }
           val callTop = calls.pop
@@ -221,16 +221,16 @@ extension [State, Input, Output](specification: Specification[State, Input, Outp
 }
 
 def renumber[Input, Output](events: List[Entry[Input, Output]]): List[Entry[Input, Output]] = {
-  val renumbering = MMap.empty[Int, Int]
+  val renumbering = MMap.empty[OperationId, OperationId]
   var id = 0
 
   events.map{ event =>
     event.withId(
       renumbering.getOrElse(event.id, {
         val i = id
-        renumbering(event.id) = id
+        renumbering(event.id) = opid(id)
         id += 1
-        i
+        opid(i)
       })
     )
   }

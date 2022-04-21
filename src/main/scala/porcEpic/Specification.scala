@@ -10,6 +10,7 @@ def cid(value: Int): ClientId = value
 object Operation {
   def apply[State, Input, Output](call: Entry.Call[Input, Output], `return`: Entry.Return[Input, Output]): Operation[Input, Output] = 
     Operation(
+      id = call.id,
       clientId = call.clientId,
       input = call.value,
       invocation = call.time,
@@ -18,7 +19,12 @@ object Operation {
     )
 }
 
+def opid(value: Int): OperationId = value
+def toInt(id: OperationId): Int = id
+opaque type OperationId = Int
+
 case class Operation[Input, Output](
+  id: OperationId,
   clientId: ClientId,
   input: Input,
   invocation: Time,
@@ -28,10 +34,10 @@ case class Operation[Input, Output](
 
 sealed trait Entry[Input, Output] {
   val time: Time
-  val id: Int
+  val id: OperationId
   val clientId: ClientId
 
-  def withId(id0: Int): Entry[Input, Output] = {
+  def withId(id0: OperationId): Entry[Input, Output] = {
     this match {
       case c: Entry.Call[_, _]   => c.copy(id = id0)
       case r: Entry.Return[_, _] => r.copy(id = id0)
@@ -40,14 +46,14 @@ sealed trait Entry[Input, Output] {
 }
 
 object Entry {
-  case class   Call[Input, Output](value: Input, time: Time, id: Int, clientId: ClientId) extends Entry[Input, Output]
-  case class Return[Input, Output](value: Output, time: Time, id: Int, clientId: ClientId) extends Entry[Input, Output]
+  case class   Call[Input, Output](value: Input , time: Time, id: OperationId, clientId: ClientId) extends Entry[Input, Output]
+  case class Return[Input, Output](value: Output, time: Time, id: OperationId, clientId: ClientId) extends Entry[Input, Output]
 
   def fromOperations[Input, Output](history: List[Operation[Input, Output]]): List[Entry[Input, Output]] = {
     history.zipWithIndex.flatMap ( (operation, index) =>
       List[Entry[Input, Output]](
-          Call(operation.input,  operation.invocation, index, operation.clientId),
-        Return(operation.output, operation.response,   index, operation.clientId)
+          Call(operation.input,  operation.invocation, opid(index), operation.clientId),
+        Return(operation.output, operation.response,   opid(index), operation.clientId)
       )
     ).sorted
   }
@@ -86,7 +92,7 @@ enum CheckResult:
 
 case class LinearizationInfo[Input, Output](
   history: List[List[Entry[Input, Output]]],
-  partialLinearizations: List[List[List[Int]]]
+  partialLinearizations: List[List[List[OperationId]]]
 )
 
 object LinearizationInfo {

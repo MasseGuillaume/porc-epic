@@ -32,14 +32,14 @@ object KeyValueParser extends RegexParsers {
     val source = Source.fromFile(s"porcupine/test_data/kv/${filename}.txt")
     val entries = source.getLines.map(KeyValueParser.apply)
 
-    val processToId = collection.mutable.Map.empty[Int, Int]
+    val processToId = collection.mutable.Map.empty[Int, OperationId]
     var i = 0
     val events: List[Entry[KeyValue.Input, KeyValue.Output]] = 
       entries.zipWithIndex.map {
         case (KeyValueEntry(process, EntryType.Invoke, functionType, key, maybeValue), time) =>
           val id = i
           i += 1
-          processToId(process) = id
+          processToId(process) = opid(id)
           val input: KeyValue.Input =
             (functionType, maybeValue) match {
               case (FunctionType.Get,    None)        => KeyValue.Input.Get(key)
@@ -50,7 +50,7 @@ object KeyValueParser extends RegexParsers {
           Entry.Call[KeyValue.Input, KeyValue.Output](
             value = input,
             time = t(time),
-            id = id,
+            id = opid(id),
             clientId = cid(process)
           )
 

@@ -45,16 +45,5 @@ object Etcd {
         case _ => throw new Exception(s"invalid history: $state, $input, $output")
       }
     }
-
-    // def describeOperation(input: Input, output: Output): String = {
-    //   (input, output) match {
-    //     case (Input.Read                , Output.Read(state))  => s"""read() -> ${state.getOrElse("nil")}"""
-    //     case (Input.Write(value)        , Output.Write(state)) => s"write(${state})"
-    //     case (Input.Cas(expected, value), Output.Cas(ok))      => s"cas($expected, $value) -> $ok"
-    //     case (_                         , Output.Timeout)      => "timeout"
-    //     case (_                         , Output.Unknown)      => "unknown"
-    //     case _                                                 => throw new Exception("invalid operation")
-    //   }
-    // }
   }
 }

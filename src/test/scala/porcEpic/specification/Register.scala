@@ -14,22 +14,13 @@ object Register {
 
   import Input._
 
-  val specification = new OperationSpecification[State, Input, Output]{
-
+  val model = new OperationSpecification[State, Input, Output]{
     def initialState: State = 0
-
     def apply(state: State, input: Input, output: State): (Boolean, State) = {
       input match {
         case Put(value) => (true, value)
         case Get => (output == state, state)
       }
     }
-
-    // def describeOperation(input: Input, output: State): String = {
-    //   input match {
-    //     case Put(value) => s"put($value)"
-    //     case Get => s"get() -> $output"
-    //   }
-    // }
   }
 }

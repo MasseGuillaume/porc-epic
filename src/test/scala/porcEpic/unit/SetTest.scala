@@ -13,6 +13,7 @@ class SetTest extends AnyFunSuite {
   test("set 01") {
     val ops = List[Operation[Input, Output]](
       Operation(
+        id = opid(1),
         clientId = cid(0), 
         input = Input.Write(state(100)),
         invocation = t(0),
@@ -20,6 +21,7 @@ class SetTest extends AnyFunSuite {
         response = t(5)
       ),
       Operation(
+        id = opid(2),
         clientId = cid(1), 
         input = Input.Write(state(0)), 
         invocation = t(1), 
@@ -27,6 +29,7 @@ class SetTest extends AnyFunSuite {
         response = t(4)
       ),
       Operation(
+        id = opid(3),
         clientId = cid(2),
         input = Input.Read,
         invocation = t(2),
@@ -41,6 +44,7 @@ class SetTest extends AnyFunSuite {
   test("set 02") {
     val ops = List[Operation[Input, Output]](
       Operation(
+        id = opid(1),
         clientId = cid(0), 
         input = Input.Write(state(100)),
         invocation = t(0),
@@ -48,6 +52,7 @@ class SetTest extends AnyFunSuite {
         response = t(5)
       ),
       Operation(
+        id = opid(2),
         clientId = cid(1), 
         input = Input.Write(state(110)),
         invocation = t(1), 
@@ -55,6 +60,7 @@ class SetTest extends AnyFunSuite {
         response = t(4)
       ),
       Operation(
+        id = opid(3),
         clientId = cid(2),
         input = Input.Read,
         invocation = t(2),
@@ -69,6 +75,7 @@ class SetTest extends AnyFunSuite {
   test("set 03") {
     val ops = List[Operation[Input, Output]](
       Operation(
+        id = opid(1),
         clientId = cid(0), 
         input = Input.Write(state(100)),
         invocation = t(0),
@@ -76,6 +83,7 @@ class SetTest extends AnyFunSuite {
         response = t(5)
       ),
       Operation(
+        id = opid(2),
         clientId = cid(1), 
         input = Input.Write(state(110)),
         invocation = t(1), 
@@ -83,6 +91,7 @@ class SetTest extends AnyFunSuite {
         response = t(4)
       ),
       Operation(
+        id = opid(3),
         clientId = cid(2),
         input = Input.Read,
         invocation = t(2),
@@ -97,6 +106,7 @@ class SetTest extends AnyFunSuite {
   test("set 04") {
     val ops = List[Operation[Input, Output]](
       Operation(
+        id = opid(1),
         clientId = cid(0), 
         input = Input.Write(state(1)),
         invocation = t(0),
@@ -104,6 +114,7 @@ class SetTest extends AnyFunSuite {
         response = t(5)
       ),
       Operation(
+        id = opid(2),
         clientId = cid(1), 
         input = Input.Read,
         invocation = t(1), 
@@ -111,6 +122,7 @@ class SetTest extends AnyFunSuite {
         response = t(2)
       ),
       Operation(
+        id = opid(3),
         clientId = cid(2),
         input = Input.Read,
         invocation = t(3),
