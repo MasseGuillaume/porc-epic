@@ -46,13 +46,13 @@ object EtcdParser extends RegexParsers {
 
     val processToId = collection.mutable.Map.empty[Int, Int]
     var i = 0
-    val events: List[Entry[Option[Etcd.State], Etcd.Input, Etcd.Output]] = 
+    val events = 
       entries.zipWithIndex.map {
         case (EtcdEntry(process, EntryType.Invoke, function, value), time) =>
           val id = i
           i += 1
           processToId(process) = id
-          
+
           val input =
             (function, value) match {
               case (Read,  Val.Nil)                       => Etcd.Input.Read
@@ -75,7 +75,7 @@ object EtcdParser extends RegexParsers {
 
           val output: Etcd.Output =
             (entry, function, value) match {
-              case (Info, _     , Val.Timeout)        => Etcd.Output.Timeout
+              case (_   , _     , Val.Timeout)        => Etcd.Output.Timeout
               case (Fail, _     , Val.CasValue(_, _)) => Etcd.Output.Cas(ok = false)
               case (Ok  , _     , Val.CasValue(_, _)) => Etcd.Output.Cas(ok = true)
               case (Ok  , Read  , Val.Value(value))   => Etcd.Output.Read(Some(state(value)))
@@ -93,9 +93,21 @@ object EtcdParser extends RegexParsers {
 
       }.toList
 
+    // events with call but without returns
+    val lastTime = events.length
+    val unfinishedEvents =
+      processToId.toList.zipWithIndex.map { case ((process, matchId), time) =>
+        Entry.Return[Option[Etcd.State], Etcd.Input, Etcd.Output](
+          value = Etcd.Output.Unknown,
+          time = t(lastTime + time),
+          id = matchId,
+          clientId = cid(process)
+        )        
+      }
+
     source.close()
 
-    events
+    events ::: unfinishedEvents
   }
 
   def parse(input: String): EtcdEntry = 

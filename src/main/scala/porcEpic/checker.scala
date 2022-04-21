@@ -41,11 +41,13 @@ extension [State, Input, Output](specification: Specification[State, Input, Outp
     verbosity: Verbosity
   ): (CheckResult, LinearizationInfo[State, Input, Output]) = {
 
+    val totalTasksCount = partitionnedHistory.size
+
     val processors = Runtime.getRuntime().availableProcessors()
     val threadPool = Executors.newFixedThreadPool(processors)
     var result = true
     var timedout = false
-
+    val longest = Array.ofDim[List[List[Int]]](totalTasksCount)
     val killSwitch = new AtomicBoolean(false)
 
     timeout.foreach { t =>
@@ -62,15 +64,14 @@ extension [State, Input, Output](specification: Specification[State, Input, Outp
       )
     }
 
-    val totalTasksCount = partitionnedHistory.size
-    
     val tasksCountLatch = new CountDownLatch(totalTasksCount)
 
     partitionnedHistory.zipWithIndex.map { (history, i) =>
       threadPool.submit(
         new Callable[Unit] {
           def call(): Unit = {
-            val (isLinearizable, _) = checkSingle(history, killSwitch)
+            val (isLinearizable, longest0) = checkSingle(history, killSwitch)
+            longest(i) = longest0
             result = result && isLinearizable
             if (!isLinearizable) {
               killSwitch.set(true)
@@ -80,7 +81,6 @@ extension [State, Input, Output](specification: Specification[State, Input, Outp
 
             if (verbosity == Verbosity.Debug) {
               val padCount = leftPad(i.toString)(length = totalTasksCount.toString.length, pad = ' ')
-
               println(s"tasks [$padCount/$totalTasksCount] Linearizable: ${isLinearizable}")
             }
           }
@@ -103,21 +103,19 @@ extension [State, Input, Output](specification: Specification[State, Input, Outp
         if (result) CheckResult.Ok
         else CheckResult.Illegal
 
-      // TODO
-      val info = LinearizationInfo.empty[State, Input, Output]
+      val info = LinearizationInfo[State, Input, Output](
+        history = partitionnedHistory,
+        partialLinearizations = longest.map(_.distinct).toList
+      )
+
       (resultOutput, info)
 
     } else {
-      val info = LinearizationInfo[State, Input, Output](
-        history = Nil,
-        partialLinearizations = Nil
-      )
-
       (CheckResult.TimedOut, LinearizationInfo.empty[State, Input, Output])
     }
   }
 
-  private def checkSingle(history: List[Entry[State, Input, Output]], killSwitch: AtomicBoolean): (Boolean, Array[Array[Int]]) = {
+  private def checkSingle(history: List[Entry[State, Input, Output]], killSwitch: AtomicBoolean): (Boolean, List[List[Int]]) = {
     case class CacheEntry(linearized: MBitset, state: State)
     case class CallEntry(entry: EntryLinkedList[State, Input, Output], state: State)
 
@@ -140,7 +138,7 @@ extension [State, Input, Output](specification: Specification[State, Input, Outp
     }
 
     var calls = Stack.empty[CallEntry]
-    val longest = Array.ofDim[Array[Int]](n)
+    val longest = Array.ofDim[List[Int]](n)
     var state = specification.initialState
 
     val buggy = 
@@ -154,7 +152,7 @@ extension [State, Input, Output](specification: Specification[State, Input, Outp
 
     while (headEntry.next != null) {
       if (killSwitch.get) {
-        return (false, longest)
+        return (false, longest.toList)
       }
       entry.elem match {
         case node: EntryNode.Call[_, _, _] =>
@@ -187,17 +185,14 @@ extension [State, Input, Output](specification: Specification[State, Input, Outp
         case r: EntryNode.Return[_, _, _] =>
           val callsLength = calls.length
           if (callsLength == 0) {
-            return (false, longest)
+            return (false, longest.toList.filter(_ != null))
           }
-          var seq: Array[Int] = null
+          var seq: List[Int] = null
           calls.foreach { v =>
             if (longest(v.entry.elem.id) == null || 
                 callsLength > longest(v.entry.elem.id).length) {
               if (seq == null) {
-                seq = Array.ofDim(callsLength)
-                calls.zipWithIndex.foreach{(c, i) =>
-                  seq(i) = v.entry.elem.id
-                }
+                seq = calls.reverse.map(_.entry.elem.id)
               }
               longest(v.entry.elem.id) = seq
             }
@@ -212,11 +207,7 @@ extension [State, Input, Output](specification: Specification[State, Input, Outp
       }
     } // while
 
-    val seq = Array.ofDim[Int](calls.length)
-    calls.zipWithIndex.reverse.foreach{  (v, i) =>
-      seq(i) = v.entry.elem.id
-    }
-
+    val seq = calls.reverse.map(_.entry.elem.id)
     {
       var i = 0
       while(i < n) {
@@ -225,7 +216,7 @@ extension [State, Input, Output](specification: Specification[State, Input, Outp
       }
     }
 
-    (true, longest)
+    (true, longest.toList.filter(_ != null))
   }
 }
 
@@ -269,7 +260,7 @@ class Stack[T](var xs: List[T]) {
   }
   def length: Int = xs.length
   def foreach(f: T => Unit): Unit = xs.foreach(f)
-  def zipWithIndex: List[(T, Int)] = xs.zipWithIndex
+  def reverse: List[T] = xs.reverse
 }
 
 private [porcEpic] def leftPad(a: String)(length: Int, pad: Char): String =

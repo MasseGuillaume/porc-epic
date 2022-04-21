@@ -13,18 +13,17 @@ class EtcdTest extends AnyFunSuite {
     .filter(_ == 2)
     .filterNot(_ == 95)
     .map(_.toString)
-    .filter(x => results(x))
+    // .filter(x => results(x))
     .foreach(name =>
 
-    test(name) {
-      println(s"\n-- etcd $name --")
+    test(s"etcd $name") {
+      // println(s"\n-- etcd $name --")
       val entries = EtcdParser.parseFile(name)
-      val (obtained, _) = specification.checkEntries(entries)//, verbosity = Verbosity.Debug)
-
+      val (obtained, info) = specification.checkEntries(entries)//, verbosity = Verbosity.Debug)
+      println(info.partialLinearizations.map(_.map(_.toList).toList).toList)
       val expected = 
         if (!results(name)) CheckResult.Illegal
         else CheckResult.Ok
-
       assert(obtained == expected)
     }
   )
