@@ -134,8 +134,8 @@ extension [State, Input, Output](specification: Specification[State, Input, Outp
     case class CallEntry(entry: EntryLinkedList[Input, Output], state: State)
 
     extension (bitset: MBitset) {
-      def set(v: OperationId): MBitset = bitset += toInt(v)
-      def clear(v: OperationId): MBitset = bitset -= toInt(v)
+      def set(v: OperationId): MBitset = bitset += OperationId.toInt(v)
+      def clear(v: OperationId): MBitset = bitset -= OperationId.toInt(v)
     }
 
     var entry = EntryLinkedList(history)
@@ -159,7 +159,7 @@ extension [State, Input, Output](specification: Specification[State, Input, Outp
       DoubleLinkedList[EntryNode[Input, Output]](
         EntryNode.Return[Input, Output](
           value = null.asInstanceOf[Output],
-          id = opid(-1)
+          id = OperationId(-1)
         )
       )
     val headEntry = buggy.insertBefore(entry)
@@ -204,12 +204,12 @@ extension [State, Input, Output](specification: Specification[State, Input, Outp
           }
           var seq: List[OperationId] = null
           calls.foreach { v =>
-            if (longest(toInt(v.entry.elem.id)) == null || 
-                callsLength > longest(toInt(v.entry.elem.id)).length) {
+            if (longest(OperationId.toInt(v.entry.elem.id)) == null || 
+                callsLength > longest(OperationId.toInt(v.entry.elem.id)).length) {
               if (seq == null) {
                 seq = calls.reverse.map(_.entry.elem.id)
               }
-              longest(toInt(v.entry.elem.id)) = seq
+              longest(OperationId.toInt(v.entry.elem.id)) = seq
             }
           }
           val callTop = calls.pop
@@ -243,9 +243,9 @@ def renumber[Input, Output](events: List[Entry[Input, Output]]): List[Entry[Inpu
     event.withId(
       renumbering.getOrElse(event.id, {
         val i = id
-        renumbering(event.id) = opid(id)
+        renumbering(event.id) = OperationId(id)
         id += 1
-        opid(i)
+        OperationId(i)
       })
     )
   }
@@ -254,7 +254,7 @@ def renumber[Input, Output](events: List[Entry[Input, Output]]): List[Entry[Inpu
 given EntryOrderingByTime[Input, Output]: Ordering[Entry[Input, Output]] =
   Ordering.by(e =>
     (
-      toLong(e.time),
+      Time.toLong(e.time),
       e match {
         case _: Entry.Call[_, _] => 0
         case _: Entry.Return[_, _] => 1

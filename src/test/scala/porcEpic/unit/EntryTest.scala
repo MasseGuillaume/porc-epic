@@ -1,7 +1,6 @@
 package porcEpic
 package unit
 
-import porcEpic.{fromLong => t}
 import TestData.{history, OperationKind}
 import OperationKind._
 
@@ -13,14 +12,14 @@ class EntryTest extends AnyFunSuite {
     val obtained = Entry.fromOperations(history)
     val expected = 
       List(
-        Entry.Call   ( value = (W, 0), time = t(0), id = opid(0), clientId = cid(0)),
-        Entry.Return ( value = 0     , time = t(1), id = opid(0), clientId = cid(0)),
-        Entry.Call   ( value = (W, 1), time = t(2), id = opid(1), clientId = cid(1)),
-        Entry.Call   ( value = (R, 1), time = t(3), id = opid(2), clientId = cid(2)),
-        Entry.Call   ( value = (R, 0), time = t(4), id = opid(3), clientId = cid(3)),
-        Entry.Return ( value = 1     , time = t(5), id = opid(3), clientId = cid(3)),
-        Entry.Return ( value = 1     , time = t(6), id = opid(2), clientId = cid(2)),
-        Entry.Return ( value = 1     , time = t(7), id = opid(1), clientId = cid(1))
+        Entry.Call   ( value = (W, 0), time = Time(0), id = OperationId(0), clientId = ClientId(0)),
+        Entry.Return ( value = 0     , time = Time(1), id = OperationId(0), clientId = ClientId(0)),
+        Entry.Call   ( value = (W, 1), time = Time(2), id = OperationId(1), clientId = ClientId(1)),
+        Entry.Call   ( value = (R, 1), time = Time(3), id = OperationId(2), clientId = ClientId(2)),
+        Entry.Call   ( value = (R, 0), time = Time(4), id = OperationId(3), clientId = ClientId(3)),
+        Entry.Return ( value = 1     , time = Time(5), id = OperationId(3), clientId = ClientId(3)),
+        Entry.Return ( value = 1     , time = Time(6), id = OperationId(2), clientId = ClientId(2)),
+        Entry.Return ( value = 1     , time = Time(7), id = OperationId(1), clientId = ClientId(1))
       )
 
     assert(obtained == expected)

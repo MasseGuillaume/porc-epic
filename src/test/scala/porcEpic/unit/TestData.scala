@@ -1,8 +1,6 @@
 package porcEpic
 package unit
 
-import porcEpic.{fromLong => t}
-
 object TestData {
   
   enum OperationKind:
@@ -18,10 +16,10 @@ object TestData {
     C3:                  |-R 0-|          |
   */
   val history = List(
-    Operation(id = opid(1), clientId = cid(0), input = (W, 0), invocation = t(0), output = 0, response = t(1)),
-    Operation(id = opid(2), clientId = cid(1), input = (W, 1), invocation = t(2), output = 1, response = t(7)),
-    Operation(id = opid(3), clientId = cid(2), input = (R, 1), invocation = t(3), output = 1, response = t(6)),
-    Operation(id = opid(4), clientId = cid(3), input = (R, 0), invocation = t(4), output = 1, response = t(5)),
+    Operation(id = OperationId(1), clientId = ClientId(0), input = (W, 0), invocation = Time(0), output = 0, response = Time(1)),
+    Operation(id = OperationId(2), clientId = ClientId(1), input = (W, 1), invocation = Time(2), output = 1, response = Time(7)),
+    Operation(id = OperationId(3), clientId = ClientId(2), input = (R, 1), invocation = Time(3), output = 1, response = Time(6)),
+    Operation(id = OperationId(4), clientId = ClientId(3), input = (R, 0), invocation = Time(4), output = 1, response = Time(5)),
   )
 }
 

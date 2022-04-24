@@ -27,8 +27,6 @@ object KeyValueParser extends RegexParsers {
   )
 
   def parseFile(filename: String): List[Entry[KeyValue.Input, KeyValue.Output]] = {
-    import porcEpic.{fromLong => t}
-
     val source = Source.fromFile(s"porcupine/test_data/kv/${filename}.txt")
     val entries = source.getLines.map(KeyValueParser.apply)
 
@@ -39,7 +37,7 @@ object KeyValueParser extends RegexParsers {
         case (KeyValueEntry(process, EntryType.Invoke, functionType, key, maybeValue), time) =>
           val id = i
           i += 1
-          processToId(process) = opid(id)
+          processToId(process) = OperationId(id)
           val input: KeyValue.Input =
             (functionType, maybeValue) match {
               case (FunctionType.Get,    None)        => KeyValue.Input.Get(key)
@@ -49,9 +47,9 @@ object KeyValueParser extends RegexParsers {
             }
           Entry.Call[KeyValue.Input, KeyValue.Output](
             value = input,
-            time = t(time),
-            id = opid(id),
-            clientId = cid(process)
+            time = Time(time),
+            id = OperationId(id),
+            clientId = ClientId(process)
           )
 
         case (KeyValueEntry(process, EntryType.Ok, _, key, Some(output)), time) =>
@@ -59,9 +57,9 @@ object KeyValueParser extends RegexParsers {
           processToId -= process
           Entry.Return[KeyValue.Input, KeyValue.Output](
             value = KeyValue.output(output),
-            time = t(time),
+            time = Time(time),
             id = matchId,
-            clientId = cid(process)
+            clientId = ClientId(process)
           )
 
         case other =>

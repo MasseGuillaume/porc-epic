@@ -1,11 +1,16 @@
 package porcEpic
 
 opaque type Time = Long
-def fromLong(value: Long): Time = value
-def toLong(time: Time): Long = time
+object Time {
+  def apply(value: Long): Time = value
+  def toLong(time: Time): Long = time
+}
 
 opaque type ClientId = Int
-def cid(value: Int): ClientId = value
+object ClientId {
+  def apply(value: Int): ClientId = value
+  def toInt(cliendId: ClientId): Int = cliendId
+}
 
 object Operation {
   def apply[State, Input, Output](call: Entry.Call[Input, Output], `return`: Entry.Return[Input, Output]): Operation[Input, Output] = 
@@ -19,9 +24,11 @@ object Operation {
     )
 }
 
-def opid(value: Int): OperationId = value
-def toInt(id: OperationId): Int = id
 opaque type OperationId = Int
+object OperationId {
+  def apply(value: Int): OperationId = value
+  def toInt(id: OperationId): Int = id
+}
 
 case class Operation[Input, Output](
   id: OperationId,
@@ -52,8 +59,8 @@ object Entry {
   def fromOperations[Input, Output](history: List[Operation[Input, Output]]): List[Entry[Input, Output]] = {
     history.zipWithIndex.flatMap ( (operation, index) =>
       List[Entry[Input, Output]](
-          Call(operation.input,  operation.invocation, opid(index), operation.clientId),
-        Return(operation.output, operation.response,   opid(index), operation.clientId)
+          Call(operation.input,  operation.invocation, OperationId(index), operation.clientId),
+        Return(operation.output, operation.response,   OperationId(index), operation.clientId)
       )
     ).sorted
   }

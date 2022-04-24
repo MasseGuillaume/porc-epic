@@ -34,8 +34,6 @@ object EtcdParser extends RegexParsers {
   )
 
   def parseFile(index: String): List[Entry[Etcd.Input, Etcd.Output]] = {
-    import porcEpic.{fromLong => t}
-
     import FunctionType._
     import EntryType._
     import Etcd.state
@@ -51,7 +49,7 @@ object EtcdParser extends RegexParsers {
         case (EtcdEntry(process, EntryType.Invoke, function, value), time) =>
           val id = i
           i += 1
-          processToId(process) = opid(id)
+          processToId(process) = OperationId(id)
 
           val input =
             (function, value) match {
@@ -64,9 +62,9 @@ object EtcdParser extends RegexParsers {
           Some(
             Entry.Call[Etcd.Input, Etcd.Output](
               value = input,
-              time = t(time),
-              id = opid(id),
-              clientId = cid(process)
+              time = Time(time),
+              id = OperationId(id),
+              clientId = ClientId(process)
             )
           )
 
@@ -91,9 +89,9 @@ object EtcdParser extends RegexParsers {
 
             Entry.Return[Etcd.Input, Etcd.Output](
               value = out,
-              time = t(time),
+              time = Time(time),
               id = matchId,
-              clientId = cid(process)
+              clientId = ClientId(process)
             )
           }
 
@@ -106,9 +104,9 @@ object EtcdParser extends RegexParsers {
       processToId.toList.zipWithIndex.map { case ((process, matchId), time) =>
         Entry.Return[Etcd.Input, Etcd.Output](
           value = Etcd.Output.Unknown,
-          time = t(lastTime + time),
+          time = Time(lastTime + time),
           id = matchId,
-          clientId = cid(process)
+          clientId = ClientId(process)
         )        
       }
 
