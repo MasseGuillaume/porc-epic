@@ -34,7 +34,27 @@ class VisualizationTest extends AnyFunSuite {
         describeState
       )
     
-    data.head.History.foreach(println)
+    assert(data.length == 1)
+    
+    assert(
+      data.head.LargestIndex == 
+        Map(
+          0 -> 0,
+          1 -> 0,
+          2 -> 0
+        )
+    )
+
+    assert(
+      data.head.PartialLinearizations ==
+        List(
+          List(
+            LinearizationStep(opid(2), "0"),
+            LinearizationStep(opid(0), "1"),
+            LinearizationStep(opid(1), "1")
+          )
+        )
+    )
   }
 
   test("not-linearizable") {
@@ -46,5 +66,32 @@ class VisualizationTest extends AnyFunSuite {
     val (result, info) = model.checkOperations(ops)
     assert(info.get.partialLinearizations == List(List(List(0, 1))))
     assert(result == CheckResult.Illegal)
+
+    val data = 
+      model.visualize(
+        info.get,
+        describeOperation,
+        describeState
+      )
+
+    assert(data.length == 1)
+
+    assert(
+      data.head.LargestIndex ==
+        Map(
+          0 -> 0,
+          1 -> 0
+        )
+    )
+
+    assert(
+      data.head.PartialLinearizations ==
+        List(
+          List(
+            LinearizationStep(opid(0), "1"),
+            LinearizationStep(opid(1), "1")
+          )
+        )
+    )
   }
 }
