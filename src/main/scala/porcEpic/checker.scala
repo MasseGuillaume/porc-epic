@@ -7,6 +7,7 @@ import scala.collection.mutable.{BitSet => MBitset, Map => MMap}
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.{Executors, TimeUnit, Callable, CountDownLatch}
 import java.util.concurrent.atomic.AtomicLong
+import scala.util.control.NonFatal
 
 enum Verbosity:
   case Debug
@@ -17,7 +18,7 @@ extension [State, Input, Output](specification: OperationSpecification[State, In
     history: List[Operation[Input, Output]],
     timeout: Option[FiniteDuration] = None,
     verbosity: Verbosity = Verbosity.Error
-  ): (CheckResult, LinearizationInfo[Input, Output]) = {
+  ): (CheckResult, Option[LinearizationInfo[Input, Output]]) = {
     val partitions = specification.partitionOperations(history).map(Entry.fromOperations)
     specification.checkParallel(partitions, timeout, verbosity)
   }
@@ -28,7 +29,7 @@ extension [State, Input, Output](specification: EntriesSpecification[State, Inpu
     history: List[Entry[Input, Output]],
     timeout: Option[FiniteDuration] = None,
     verbosity: Verbosity = Verbosity.Error
-  ): (CheckResult, LinearizationInfo[Input, Output]) = {
+  ): (CheckResult, Option[LinearizationInfo[Input, Output]]) = {
     val partitions = specification.partitionEntries(history).map(renumber)
     specification.checkParallel(partitions, timeout, verbosity)
   }
@@ -39,24 +40,24 @@ extension [State, Input, Output](specification: Specification[State, Input, Outp
     partitionnedHistory: List[List[Entry[Input, Output]]],
     timeout: Option[FiniteDuration],
     verbosity: Verbosity
-  ): (CheckResult, LinearizationInfo[Input, Output]) = {
+  ): (CheckResult, Option[LinearizationInfo[Input, Output]]) = {
 
     val totalTasksCount = partitionnedHistory.size
 
     val processors = Runtime.getRuntime().availableProcessors()
     val threadPool = Executors.newFixedThreadPool(processors)
     var result = true
-    var timedout = false
     val longest = Array.ofDim[List[List[OperationId]]](totalTasksCount)
     val killSwitch = new AtomicBoolean(false)
+    var timedout = false
 
     timeout.foreach { t =>
       val scheduler = Executors.newScheduledThreadPool(1)
       scheduler.schedule(
         new Callable[Unit] {
           def call(): Unit = {
-            timedout = true
             killSwitch.set(true)
+            timedout = true
           }
         },
         t.toSeconds,
@@ -70,18 +71,30 @@ extension [State, Input, Output](specification: Specification[State, Input, Outp
       threadPool.submit(
         new Callable[Unit] {
           def call(): Unit = {
-            val (isLinearizable, longest0) = checkSingle(history, killSwitch)
-            longest(i) = longest0
-            result = result && isLinearizable
-            if (!isLinearizable) {
-              killSwitch.set(true)
-            }
-            
-            tasksCountLatch.countDown()
+            try {
+              val paddedTaskId = leftPad(i.toString)(length = totalTasksCount.toString.length, pad = ' ')
+              def remainingTaskCount = totalTasksCount - tasksCountLatch.getCount
+              if (verbosity == Verbosity.Debug) {
+                println(s"Start task $paddedTaskId [${remainingTaskCount}/$totalTasksCount]")
+              }
 
-            if (verbosity == Verbosity.Debug) {
-              val padCount = leftPad(i.toString)(length = totalTasksCount.toString.length, pad = ' ')
-              println(s"tasks [$padCount/$totalTasksCount] Linearizable: ${isLinearizable}")
+              val (isLinearizable, longest0) = checkSingle(history, killSwitch)
+              longest(i) = longest0
+              result = result && isLinearizable
+              if (!isLinearizable) {
+                killSwitch.set(true)
+              }
+              
+              tasksCountLatch.countDown()
+
+              if (verbosity == Verbosity.Debug) {
+                println(s"Done task $paddedTaskId Linearizable: ${isLinearizable} [${remainingTaskCount}/$totalTasksCount]")
+              }
+            } catch {
+              case NonFatal(e) =>
+                e.printStackTrace()
+                killSwitch.set(true)
+                tasksCountLatch.countDown()
             }
           }
         }
@@ -108,14 +121,15 @@ extension [State, Input, Output](specification: Specification[State, Input, Outp
         partialLinearizations = longest.map(_.distinct).toList
       )
 
-      (resultOutput, info)
+      (resultOutput, Some(info))
 
     } else {
-      (CheckResult.TimedOut, LinearizationInfo.empty[Input, Output])
+      (CheckResult.TimedOut, None)
     }
   }
 
   private def checkSingle(history: List[Entry[Input, Output]], killSwitch: AtomicBoolean): (Boolean, List[List[OperationId]]) = {
+    
     case class CacheEntry(linearized: MBitset, state: State)
     case class CallEntry(entry: EntryLinkedList[Input, Output], state: State)
 
@@ -154,6 +168,7 @@ extension [State, Input, Output](specification: Specification[State, Input, Outp
       if (killSwitch.get) {
         return (false, longest.toList)
       }
+
       entry.elem match {
         case node: EntryNode.Call[_, _] =>
           val matching = 

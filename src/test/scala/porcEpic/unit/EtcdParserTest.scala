@@ -26,7 +26,7 @@ class EtcdParserTest extends AnyFunSuite {
 
   parseTest(
     "INFO  jepsen.util - 3   :fail   :read   :timed-out", 
-    EtcdEntry(process = 3, entry = EntryType.Fail,   function = FunctionType.Read,  value = Val.Timeout)
+    EtcdEntry(process = 3, entry = EntryType.Fail,   function = FunctionType.Read,  value = Val.Unknown)
   )
 
 
@@ -43,7 +43,7 @@ class EtcdParserTest extends AnyFunSuite {
 
   parseTest(
     "INFO  jepsen.util - 4 :info :write  :timed-out", 
-    EtcdEntry(process = 4, entry = EntryType.Info,   function = FunctionType.Write, value = Val.Timeout)
+    EtcdEntry(process = 4, entry = EntryType.Info,   function = FunctionType.Write, value = Val.Unknown)
   )
 
 
@@ -65,7 +65,7 @@ class EtcdParserTest extends AnyFunSuite {
 
   parseTest(
     "INFO  jepsen.util - 1 :info :cas  :timed-out", 
-    EtcdEntry(process = 1, entry = EntryType.Info,   function = FunctionType.Cas,   value = Val.Timeout)
+    EtcdEntry(process = 1, entry = EntryType.Info,   function = FunctionType.Cas,   value = Val.Unknown)
   )
 
   def parseTest(input: String, expected: EtcdParser.EtcdEntry): Unit =

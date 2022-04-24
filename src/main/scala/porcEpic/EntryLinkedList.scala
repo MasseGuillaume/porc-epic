@@ -9,7 +9,7 @@ object EntryLinkedList {
     var root: DoubleLinkedList[EntryNode[Input, Output]] = null
     val matches = collection.mutable.Map.empty[OperationId, EntryLinkedList[Input, Output]]
 
-    entries.reverse.foreach{ elem => 
+    entries.reverse.foreach{ elem =>
       val entry =
         elem match {
           case r: Entry.Return[_, _] =>

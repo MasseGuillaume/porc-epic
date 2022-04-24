@@ -38,12 +38,5 @@ object KeyValue {
         case Input.Append(key, value) => (true, state + value)
       }
     }
-    // def describeOperation(input: Input, output: State): String = {
-    //   input match {
-    //     case Input.Get(key)           => s"get($key) -> $output"
-    //     case Input.Put(key, value)    => s"put($key, $value)"
-    //     case Input.Append(key, value) => s"append($key, $value)"
-    //   }
-    // }
   }
 }

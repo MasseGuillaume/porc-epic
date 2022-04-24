@@ -2,9 +2,7 @@ package porcEpic
 
 import scala.reflect.ClassTag
 
-
-import io.circe.generic.extras._, io.circe.syntax._
-implicit val config: Configuration = Configuration.default.withSnakeCaseMemberNames
+import io.circe._, io.circe.generic.semiauto._
 
 object HistoryElement {
   def apply[I, O](
@@ -12,29 +10,29 @@ object HistoryElement {
       describe: Operation[I, O] => String,
   ): HistoryElement =
     new HistoryElement(
-      clientId = operation.clientId,
-      invocation = operation.invocation,
-      response = operation.response,
-      description = describe(operation)
+      ClientId = operation.clientId,
+      Invocation = operation.invocation,
+      Response = operation.response,
+      Description = describe(operation)
     )
 }
 
-@ConfiguredJsonCodec case class HistoryElement(
-    clientId: ClientId,
-    invocation: Time,
-    response: Time,
-    description: String
+case class HistoryElement(
+  ClientId: ClientId,
+  Invocation: Time,
+  Response: Time,
+  Description: String
 )
 
-@ConfiguredJsonCodec case class LinearizationStep(
-    index: OperationId,
-    stateDescription: String
+case class LinearizationStep(
+  Index: OperationId,
+  StateDescription: String
 )
 
-@ConfiguredJsonCodec case class PartitionVisualizationData(
-    history: List[HistoryElement],
-    partialLinearizations: List[List[LinearizationStep]],
-    largestIndex: Map[Int, Int]
+case class PartitionVisualizationData(
+  History: List[HistoryElement],
+  PartialLinearizations: List[List[LinearizationStep]],
+  LargestIndex: Map[Int, Int]
 )
 
 type VisualizationData = List[PartitionVisualizationData]
@@ -82,8 +80,8 @@ extension [S, I, O](specification: Specification[S, I, O])(using ci: ClassTag[I]
               throw new Exception("valid partial linearization returned non-ok result from model step")
             }
             linearization(j) = LinearizationStep(
-              index = histId,
-              stateDescription = describeState(state)
+              Index = histId,
+              StateDescription = describeState(state)
             )
             if (largestSize(toInt(histId)) < partial.length) {
               largestSize(toInt(histId)) = partial.length
@@ -94,9 +92,9 @@ extension [S, I, O](specification: Specification[S, I, O])(using ci: ClassTag[I]
         }
 
       PartitionVisualizationData(
-        history = operations.map(operation => HistoryElement(operation, describeOperation)),
-        partialLinearizations = partialLinearizations,
-        largestIndex = largestIndex.toMap
+        History = operations.map(operation => HistoryElement(operation, describeOperation)),
+        PartialLinearizations = partialLinearizations,
+        LargestIndex = largestIndex.toMap
       )
     }
   }

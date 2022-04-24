@@ -27,19 +27,14 @@ class VisualizationTest extends AnyFunSuite {
       Operation(id = opid(2), clientId = cid(2), input = Get,           invocation = t(3), output = output(0), response = t(7)),
     )
     val (_, info) = model.checkOperations(ops)
-
-
     val data = 
       model.visualize(
-        info,
+        info.get,
         describeOperation,
         describeState
       )
     
-    data.head.history.foreach(println)
-    
-
-    
+    data.head.History.foreach(println)
   }
 
   test("not-linearizable") {
@@ -49,7 +44,7 @@ class VisualizationTest extends AnyFunSuite {
       Operation(id = opid(2), clientId = cid(2), input = Get,           invocation = t(5), output = output(0), response = t(10)),
     )
     val (result, info) = model.checkOperations(ops)
-    assert(info.partialLinearizations == List(List(List(0, 1))))
+    assert(info.get.partialLinearizations == List(List(List(0, 1))))
     assert(result == CheckResult.Illegal)
   }
 }

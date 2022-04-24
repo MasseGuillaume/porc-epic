@@ -24,7 +24,7 @@ object EtcdParser extends RegexParsers {
     case Nil extends Val
     case Value(value: Int) extends Val
     case CasValue(expected: Int, value: Int) extends Val
-    case Timeout extends Val
+    case Unknown extends Val
 
   case class EtcdEntry(
     process: Int, 
@@ -47,7 +47,7 @@ object EtcdParser extends RegexParsers {
     val processToId = collection.mutable.Map.empty[Int, OperationId]
     var i = 0
     val events = 
-      entries.zipWithIndex.map {
+      entries.zipWithIndex.flatMap {
         case (EtcdEntry(process, EntryType.Invoke, function, value), time) =>
           val id = i
           i += 1
@@ -61,39 +61,46 @@ object EtcdParser extends RegexParsers {
               case _ => throw new Exception(s"bogus parsing: $filename $functionType $value")
             }
 
-          Entry.Call[Etcd.Input, Etcd.Output](
-            value = input,
-            time = t(time),
-            id = opid(id),
-            clientId = cid(process)
+          Some(
+            Entry.Call[Etcd.Input, Etcd.Output](
+              value = input,
+              time = t(time),
+              id = opid(id),
+              clientId = cid(process)
+            )
           )
 
 
         case (EtcdEntry(process, entry, function, value), time) =>
-          val matchId = processToId(process)
-          processToId -= process
-
-          val output: Etcd.Output =
+          val output: Option[Etcd.Output] =
             (entry, function, value) match {
-              case (_   , _     , Val.Timeout)        => Etcd.Output.Timeout
-              case (Fail, _     , Val.CasValue(_, _)) => Etcd.Output.Cas(ok = false)
-              case (Ok  , _     , Val.CasValue(_, _)) => Etcd.Output.Cas(ok = true)
-              case (Ok  , Read  , Val.Value(value))   => Etcd.Output.Read(Some(state(value)))
-              case (Ok  , Read  , Val.Nil)            => Etcd.Output.Read(None)
-              case (Ok  , Write , Val.Value(value))   => Etcd.Output.Write(state(value))
+              case (Ok  , Read  , Val.Value(value))   => Some(Etcd.Output.Read(Some(state(value))))
+              case (Ok  , Read  , Val.Nil)            => Some(Etcd.Output.Read(None))
+              case (Ok  , Write , Val.Value(value))   => Some(Etcd.Output.Write(state(value)))
+              case (Fail, _     , Val.CasValue(_, _)) => Some(Etcd.Output.Cas(ok = false))
+              case (Ok  , _     , Val.CasValue(_, _)) => Some(Etcd.Output.Cas(ok = true))
+              case (_   , Read  , Val.Unknown)        => Some(Etcd.Output.Unknown)
+              case (_   , _     , Val.Unknown)        => None
               case _                                  => throw new Exception(s"unexpected return entry: $entry, $function, $value")
             }
 
-          Entry.Return[Etcd.Input, Etcd.Output](
-            value = output,
-            time = t(time),
-            id = matchId,
-            clientId = cid(process)
-          )
+          output.map{ out =>
+
+            val matchId = processToId(process)
+            processToId -= process
+
+            Entry.Return[Etcd.Input, Etcd.Output](
+              value = out,
+              time = t(time),
+              id = matchId,
+              clientId = cid(process)
+            )
+          }
 
       }.toList
 
     // events with call but without returns
+    // we dropped cas and write timeout since we don't know if the server got the packet or not
     val lastTime = events.length
     val unfinishedEvents =
       processToId.toList.zipWithIndex.map { case ((process, matchId), time) =>
@@ -134,7 +141,7 @@ object EtcdParser extends RegexParsers {
   def value: Parser[Val] = 
     "[" ~> int ~ int <~ "]" ^^ { case a ~ b => Val.CasValue(a, b) } |
     "nil" ^^ { _ => Val.Nil } |
-    ":timed-out" ^^ { _ => Val.Timeout} |
+    ":timed-out" ^^ { _ => Val.Unknown } |
     int ^^ { v => Val.Value(v) }
 
   def entryType: Parser[EntryType] =

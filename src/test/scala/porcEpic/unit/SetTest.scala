@@ -131,7 +131,6 @@ class SetTest extends AnyFunSuite {
       ),
     )
     val (result, info) = specification.checkOperations(ops)
-    println(info.partialLinearizations.map(_.map(_.toList).toList).toList)
     assert(result == CheckResult.Illegal)
   }
 }

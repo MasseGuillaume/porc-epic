@@ -94,8 +94,3 @@ case class LinearizationInfo[Input, Output](
   history: List[List[Entry[Input, Output]]],
   partialLinearizations: List[List[List[OperationId]]]
 )
-
-object LinearizationInfo {
-  def empty[Input, Output]: LinearizationInfo[Input, Output] = 
-    LinearizationInfo(Nil, Nil)
-}

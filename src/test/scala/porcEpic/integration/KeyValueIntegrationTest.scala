@@ -8,6 +8,14 @@ import parser.KeyValueParser
 
 class KeyValueTest extends AnyFunSuite {
   
+  def describeOperation(operation: Operation[Input, Output]): String = {
+    operation.input match {
+      case Input.Get(key)           => s"get($key) -> ${operation.output}"
+      case Input.Put(key, value)    => s"put($key, $value)"
+      case Input.Append(key, value) => s"append($key, $value)"
+    }
+  }
+
   List(
     "c01-bad",
     "c01-ok",
@@ -29,5 +37,6 @@ class KeyValueTest extends AnyFunSuite {
 
       assert(obtained == expected)
     }
+
   )
 }
