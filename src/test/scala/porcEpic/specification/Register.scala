@@ -3,14 +3,17 @@ package specification
 
 object Register {
   opaque type State = Int
-  def state(value: Int): State = value 
-
+  object State {
+    def apply(value: Int): State = value 
+  }
   opaque type Output = State
-  def output(value: Int): Output = value 
+  object Output {
+    def apply(value: Int): Output = value 
+  }
 
   enum Input:
-    case Put(value: State) extends Input
-    case Get extends Input
+    case Put(value: State)
+    case Get
 
   import Input._
 

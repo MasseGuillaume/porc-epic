@@ -34,8 +34,8 @@ case class Operation[Input, Output](
   id: OperationId,
   clientId: ClientId,
   input: Input,
-  invocation: Time,
   output: Output,
+  invocation: Time,
   response: Time
 )
 
