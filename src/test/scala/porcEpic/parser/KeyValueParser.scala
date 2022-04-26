@@ -10,13 +10,13 @@ import scala.io.Source
 
 object KeyValueParser extends RegexParsers {
   enum EntryType:
-    case Invoke extends EntryType
-    case Ok extends EntryType
+    case Invoke
+    case Ok
 
   enum FunctionType:
-    case Get extends FunctionType
-    case Put extends FunctionType
-    case Append extends FunctionType
+    case Get
+    case Put
+    case Append
 
   case class KeyValueEntry(
     process: Int, 
@@ -46,20 +46,20 @@ object KeyValueParser extends RegexParsers {
               case _ => throw new Exception(s"bogus parsing: $filename $functionType $maybeValue")
             }
           Entry.Call[KeyValue.Input, KeyValue.Output](
-            value = input,
-            time = Time(time),
-            id = OperationId(id),
-            clientId = ClientId(process)
+            input,
+            Time(time),
+            OperationId(id),
+            ClientId(process)
           )
 
         case (KeyValueEntry(process, EntryType.Ok, _, key, Some(output)), time) =>
           val matchId = processToId(process)
           processToId -= process
           Entry.Return[KeyValue.Input, KeyValue.Output](
-            value = KeyValue.output(output),
-            time = Time(time),
-            id = matchId,
-            clientId = ClientId(process)
+            KeyValue.output(output),
+            Time(time),
+            matchId,
+            ClientId(process)
           )
 
         case other =>

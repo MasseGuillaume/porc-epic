@@ -13,34 +13,34 @@ enum Verbosity:
   case Debug
   case Error
 
-extension [State, Input, Output](specification: OperationSpecification[State, Input, Output]) {
+extension [S, I, O](specification: OperationSpecification[S, I, O]) {
   def checkOperations(
-    history: List[Operation[Input, Output]],
+    history: List[Operation[I, O]],
     timeout: Option[FiniteDuration] = None,
     verbosity: Verbosity = Verbosity.Error
-  ): (CheckResult, Option[LinearizationInfo[Input, Output]]) = {
+  ): (CheckResult, Option[LinearizationInfo[I, O]]) = {
     val partitions = specification.partitionOperations(history).map(Entry.fromOperations)
     specification.checkParallel(partitions, timeout, verbosity)
   }
 }
 
-extension [State, Input, Output](specification: EntriesSpecification[State, Input, Output]) {
+extension [S, I, O](specification: EntriesSpecification[S, I, O]) {
   def checkEntries(
-    history: List[Entry[Input, Output]],
+    history: List[Entry[I, O]],
     timeout: Option[FiniteDuration] = None,
     verbosity: Verbosity = Verbosity.Error
-  ): (CheckResult, Option[LinearizationInfo[Input, Output]]) = {
+  ): (CheckResult, Option[LinearizationInfo[I, O]]) = {
     val partitions = specification.partitionEntries(history).map(renumber)
     specification.checkParallel(partitions, timeout, verbosity)
   }
 }
 
-extension [State, Input, Output](specification: Specification[State, Input, Output]) {
+extension [S, I, O](specification: Specification[S, I, O]) {
   def checkParallel(
-    partitionnedHistory: List[List[Entry[Input, Output]]],
+    partitionnedHistory: List[List[Entry[I, O]]],
     timeout: Option[FiniteDuration],
     verbosity: Verbosity
-  ): (CheckResult, Option[LinearizationInfo[Input, Output]]) = {
+  ): (CheckResult, Option[LinearizationInfo[I, O]]) = {
 
     val totalTasksCount = partitionnedHistory.size
 
@@ -116,7 +116,7 @@ extension [State, Input, Output](specification: Specification[State, Input, Outp
         if (result) CheckResult.Ok
         else CheckResult.Illegal
 
-      val info = LinearizationInfo[Input, Output](
+      val info = LinearizationInfo[I, O](
         history = partitionnedHistory,
         partialLinearizations = longest.map(_.distinct).toList
       )
@@ -128,10 +128,10 @@ extension [State, Input, Output](specification: Specification[State, Input, Outp
     }
   }
 
-  private def checkSingle(history: List[Entry[Input, Output]], killSwitch: AtomicBoolean): (Boolean, List[List[OperationId]]) = {
+  private def checkSingle(history: List[Entry[I, O]], killSwitch: AtomicBoolean): (Boolean, List[List[OperationId]]) = {
     
-    case class CacheEntry(linearized: MBitset, state: State)
-    case class CallEntry(entry: EntryLinkedList[Input, Output], state: State)
+    case class CacheEntry(linearized: MBitset, state: S)
+    case class CallEntry(entry: EntryLinkedList[I, O], state: S)
 
     extension (bitset: MBitset) {
       def set(v: OperationId): MBitset = bitset += OperationId.toInt(v)
@@ -155,14 +155,14 @@ extension [State, Input, Output](specification: Specification[State, Input, Outp
     val longest = Array.ofDim[List[OperationId]](n)
     var state = specification.initialState
 
-    val buggy = 
-      DoubleLinkedList[EntryNode[Input, Output]](
-        EntryNode.Return[Input, Output](
-          value = null.asInstanceOf[Output],
+    val sentinel = 
+      DoubleLinkedList[EntryNode[I, O]](
+        EntryNode.Return[I, O](
+          output = null.asInstanceOf[O],
           id = OperationId(-1)
         )
       )
-    val headEntry = buggy.insertBefore(entry)
+    val headEntry = sentinel.insertBefore(entry)
 
     while (headEntry.next != null) {
       if (killSwitch.get) {
@@ -173,11 +173,11 @@ extension [State, Input, Output](specification: Specification[State, Input, Outp
         case node: EntryNode.Call[_, _] =>
           val matching = 
             node.matches.elem match {
-              case r: EntryNode.Return[_, _] => r.asInstanceOf[EntryNode.Return[Input, Output]]
+              case r: EntryNode.Return[_, _] => r.asInstanceOf[EntryNode.Return[I, O]]
               case _: EntryNode.Call[_, _]   => throw new Exception("call matching should be a return")
             }
 
-          val (isLinearizable, newState) = specification.apply(state, node.value, matching.value)
+          val (isLinearizable, newState) = specification.apply(state, node.input, matching.output)
 
           if (isLinearizable) {
             val newLinearized = linearized.clone().set(node.id)
@@ -235,7 +235,7 @@ extension [State, Input, Output](specification: Specification[State, Input, Outp
   }
 }
 
-def renumber[Input, Output](events: List[Entry[Input, Output]]): List[Entry[Input, Output]] = {
+def renumber[I, O](events: List[Entry[I, O]]): List[Entry[I, O]] = {
   val renumbering = MMap.empty[OperationId, OperationId]
   var id = 0
 
@@ -251,7 +251,7 @@ def renumber[Input, Output](events: List[Entry[Input, Output]]): List[Entry[Inpu
   }
 }
 
-given EntryOrderingByTime[Input, Output]: Ordering[Entry[Input, Output]] =
+given EntryOrderingByTime[I, O]: Ordering[Entry[I, O]] =
   Ordering.by(e =>
     (
       Time.toLong(e.time),

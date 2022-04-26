@@ -7,13 +7,13 @@ object SetModel {
   def state(value: Int*): State = Set(value*)
 
   enum Input:
-    case Read extends Input
-    case Write(values: State) extends Input
+    case Read
+    case Write(values: State)
 
   enum Output:
-    case Write extends Output
-    case UnknowRead extends Output
-    case Read(values: State) extends Output
+    case Write
+    case UnknowRead
+    case Read(values: State)
 
 
   import Input._
@@ -33,12 +33,5 @@ object SetModel {
         case _                                          => invalid
       }
     }
-
-    // def describeOperation(input: Input, output: Output): String = {
-    //   input match {
-    //     case Read         => s"read() -> $output"
-    //     case Write(state) => s"write($state)"
-    //   }
-    // }
   }
 }

@@ -10,21 +10,21 @@ import scala.io.Source
 
 object EtcdParser extends RegexParsers {
   enum EntryType:
-    case Invoke extends EntryType
-    case Ok extends EntryType
-    case Fail extends EntryType
-    case Info extends EntryType
+    case Invoke
+    case Ok
+    case Fail
+    case Info
 
   enum FunctionType:
-    case Read extends FunctionType
-    case Write extends FunctionType
-    case Cas extends FunctionType
+    case Read
+    case Write
+    case Cas
 
   enum Val:
-    case Nil extends Val
-    case Value(value: Int) extends Val
-    case CasValue(expected: Int, value: Int) extends Val
-    case Unknown extends Val
+    case Nil
+    case Value(value: Int)
+    case CasValue(expected: Int, value: Int)
+    case Unknown
 
   case class EtcdEntry(
     process: Int, 
@@ -61,10 +61,10 @@ object EtcdParser extends RegexParsers {
 
           Some(
             Entry.Call[Etcd.Input, Etcd.Output](
-              value = input,
-              time = Time(time),
-              id = OperationId(id),
-              clientId = ClientId(process)
+              input,
+              Time(time),
+              OperationId(id),
+              ClientId(process)
             )
           )
 
@@ -88,10 +88,10 @@ object EtcdParser extends RegexParsers {
             processToId -= process
 
             Entry.Return[Etcd.Input, Etcd.Output](
-              value = out,
-              time = Time(time),
-              id = matchId,
-              clientId = ClientId(process)
+              out,
+              Time(time),
+              matchId,
+              ClientId(process)
             )
           }
 
@@ -103,10 +103,10 @@ object EtcdParser extends RegexParsers {
     val unfinishedEvents =
       processToId.toList.zipWithIndex.map { case ((process, matchId), time) =>
         Entry.Return[Etcd.Input, Etcd.Output](
-          value = Etcd.Output.Unknown,
-          time = Time(lastTime + time),
-          id = matchId,
-          clientId = ClientId(process)
+          Etcd.Output.Unknown,
+          Time(lastTime + time),
+          matchId,
+          ClientId(process)
         )        
       }
 

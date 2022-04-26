@@ -6,15 +6,15 @@ object Etcd {
   def state(value: Int): State = value
 
   enum Input:
-    case Read extends Input
-    case Write(value: State) extends Input
-    case Cas(expected: State, value: State) extends Input
+    case Read
+    case Write(value: State)
+    case Cas(expected: State, value: State)
 
   enum Output:
-    case Unknown extends Output
-    case Cas(ok: Boolean) extends Output
-    case Read(value: Option[State]) extends Output
-    case Write(value: State) extends Output
+    case Unknown
+    case Cas(ok: Boolean)
+    case Read(value: Option[State])
+    case Write(value: State)
 
   val specification = new EntriesSpecification[Option[State], Input, Output]{
     def initialState: Option[State] = None
