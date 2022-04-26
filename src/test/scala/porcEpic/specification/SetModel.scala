@@ -3,20 +3,16 @@ package specification
 
 object SetModel {
   opaque type State = Set[Int]
-
-  def state(value: Int*): State = Set(value*)
-
+  object State {
+    def apply(value: Int*): State = Set(value*)
+  }
   enum Input:
     case Read
     case Write(values: State)
-
   enum Output:
     case Write
     case UnknowRead
     case Read(values: State)
-
-
-  import Input._
 
   val specification = new OperationSpecification[State, Input, Output]{
 

@@ -3,15 +3,12 @@ package specification
 
 object KeyValue {
   opaque type State = String
-  def state(value: String): State = value
-
-  opaque type Output = State
-  def output(value: String): Output = value
-
+  object State {
+    def apply(value: String): State = value
+  }
   extension (state: State) {
     def +(other: State): State = state + other
   }
-
   sealed trait Input {
     val key: String
   }
@@ -19,6 +16,10 @@ object KeyValue {
     case class Put(key: String, value: State) extends Input
     case class Get(key: String) extends Input
     case class Append(key: String, value: State) extends Input
+  }
+  opaque type Output = State
+  object Output {
+    def apply(value: String): Output = value
   }
 
   val specification = new EntriesSpecification[State, Input, Output] {
@@ -30,7 +31,7 @@ object KeyValue {
         .map(Entry.fromOperations)
         .toList
     }
-    def initialState: State = state("")
+    def initialState: State = State("")
     def apply(state: State, input: Input, output: State): (Boolean, State) = {
       input match {
         case Input.Get(key)           => (output == state, state)

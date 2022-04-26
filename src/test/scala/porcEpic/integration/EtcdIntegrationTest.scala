@@ -23,7 +23,7 @@ class EtcdTest extends AnyFunSuite {
   // 102
   (0 to 102)
     // .filter(_ == 2)
-    .filterNot(_ == 95)
+    .filterNot(_ == 95) // this test does not exists
     .map(_.toString)
     .foreach(name =>
 

@@ -26,8 +26,13 @@ object EtcdParser extends RegexParsers {
     case CasValue(expected: Int, value: Int)
     case Unknown
 
+  opaque type ProcessId = Int
+  object ProcessId {
+    def apply(value: Int): ProcessId = value
+  }
+
   case class EtcdEntry(
-    process: Int, 
+    process: ProcessId, 
     entry: EntryType,
     function: FunctionType,
     value: Val
@@ -36,7 +41,7 @@ object EtcdParser extends RegexParsers {
   def parseFile(index: String): List[Entry[Etcd.Input, Etcd.Output]] = {
     import FunctionType._
     import EntryType._
-    import Etcd.state
+    import Etcd.State
     
     val filename = leftPad(index)(3, '0')
     val source = Source.fromFile(s"porcupine/test_data/jepsen/etcd_${filename}.log")
@@ -54,8 +59,8 @@ object EtcdParser extends RegexParsers {
           val input =
             (function, value) match {
               case (Read,  Val.Nil)                       => Etcd.Input.Read
-              case (Write, Val.Value(value))              => Etcd.Input.Write(state(value))
-              case (Cas,   Val.CasValue(expected, value)) => Etcd.Input.Cas(state(expected), state(value))
+              case (Write, Val.Value(value))              => Etcd.Input.Write(State(value))
+              case (Cas,   Val.CasValue(expected, value)) => Etcd.Input.Cas(State(expected), State(value))
               case _ => throw new Exception(s"bogus parsing: $filename $functionType $value")
             }
 
@@ -72,9 +77,9 @@ object EtcdParser extends RegexParsers {
         case (EtcdEntry(process, entry, function, value), time) =>
           val output: Option[Etcd.Output] =
             (entry, function, value) match {
-              case (Ok  , Read  , Val.Value(value))   => Some(Etcd.Output.Read(Some(state(value))))
+              case (Ok  , Read  , Val.Value(value))   => Some(Etcd.Output.Read(Some(State(value))))
               case (Ok  , Read  , Val.Nil)            => Some(Etcd.Output.Read(None))
-              case (Ok  , Write , Val.Value(value))   => Some(Etcd.Output.Write(state(value)))
+              case (Ok  , Write , Val.Value(value))   => Some(Etcd.Output.Write(State(value)))
               case (Fail, _     , Val.CasValue(_, _)) => Some(Etcd.Output.Cas(ok = false))
               case (Ok  , _     , Val.CasValue(_, _)) => Some(Etcd.Output.Cas(ok = true))
               case (_   , Read  , Val.Unknown)        => Some(Etcd.Output.Unknown)
@@ -129,10 +134,12 @@ object EtcdParser extends RegexParsers {
     }
 
   def root: Parser[EtcdEntry] =
-    ("INFO  jepsen.util -" ~> int) ~ entryType ~ functionType ~ value ^^ {
+    ("INFO  jepsen.util -" ~> process) ~ entryType ~ functionType ~ value ^^ {
       case process ~ eTpe ~ fTpe ~ value =>
         EtcdEntry(process, eTpe, fTpe, value)
     }
+
+  def process: Parser[ProcessId] = int.map(ProcessId.apply)
 
   def int: Parser[Int] = """\d+""".r ^^ { _.toInt }
 

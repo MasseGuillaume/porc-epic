@@ -3,8 +3,9 @@ package specification
 
 object Etcd {
   opaque type State = Int
-  def state(value: Int): State = value
-
+  object State {
+    def apply(value: Int): State = value
+  }
   enum Input:
     case Read
     case Write(value: State)

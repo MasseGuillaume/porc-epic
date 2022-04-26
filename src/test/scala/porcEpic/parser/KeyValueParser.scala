@@ -32,19 +32,21 @@ object KeyValueParser extends RegexParsers {
 
     val processToId = collection.mutable.Map.empty[Int, OperationId]
     var i = 0
-    val events: List[Entry[KeyValue.Input, KeyValue.Output]] = 
+    val events = 
       entries.zipWithIndex.map {
         case (KeyValueEntry(process, EntryType.Invoke, functionType, key, maybeValue), time) =>
           val id = i
           i += 1
           processToId(process) = OperationId(id)
+
           val input: KeyValue.Input =
             (functionType, maybeValue) match {
               case (FunctionType.Get,    None)        => KeyValue.Input.Get(key)
-              case (FunctionType.Put,    Some(value)) => KeyValue.Input.Put(key, KeyValue.state(value))
-              case (FunctionType.Append, Some(value)) => KeyValue.Input.Append(key, KeyValue.state(value))
+              case (FunctionType.Put,    Some(value)) => KeyValue.Input.Put(key, KeyValue.State(value))
+              case (FunctionType.Append, Some(value)) => KeyValue.Input.Append(key, KeyValue.State(value))
               case _ => throw new Exception(s"bogus parsing: $filename $functionType $maybeValue")
             }
+
           Entry.Call[KeyValue.Input, KeyValue.Output](
             input,
             Time(time),
@@ -56,7 +58,7 @@ object KeyValueParser extends RegexParsers {
           val matchId = processToId(process)
           processToId -= process
           Entry.Return[KeyValue.Input, KeyValue.Output](
-            KeyValue.output(output),
+            KeyValue.Output(output),
             Time(time),
             matchId,
             ClientId(process)

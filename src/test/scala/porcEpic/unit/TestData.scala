@@ -8,6 +8,7 @@ object TestData {
     case R
 
   import OperationKind._
+  import porcEpic.{Time => t}
 
   /*    t0    t1 t2   t3 t4    t5   t6 t7 |
     C0: |-W 0-|                           |
@@ -16,10 +17,10 @@ object TestData {
     C3:                  |-R 0-|          |
   */
   val history = List(
-    Operation(id = OperationId(1), clientId = ClientId(0), input = (W, 0), invocation = Time(0), output = 0, response = Time(1)),
-    Operation(id = OperationId(2), clientId = ClientId(1), input = (W, 1), invocation = Time(2), output = 1, response = Time(7)),
-    Operation(id = OperationId(3), clientId = ClientId(2), input = (R, 1), invocation = Time(3), output = 1, response = Time(6)),
-    Operation(id = OperationId(4), clientId = ClientId(3), input = (R, 0), invocation = Time(4), output = 1, response = Time(5)),
+    Operation(OperationId(1), ClientId(0), input = (W, 0), output = 0, invocation = t(0), response = t(1)),
+    Operation(OperationId(2), ClientId(1), input = (W, 1), output = 1, invocation = t(2), response = t(7)),
+    Operation(OperationId(3), ClientId(2), input = (R, 1), output = 1, invocation = t(3), response = t(6)),
+    Operation(OperationId(4), ClientId(3), input = (R, 0), output = 1, invocation = t(4), response = t(5)),
   )
 }
 
