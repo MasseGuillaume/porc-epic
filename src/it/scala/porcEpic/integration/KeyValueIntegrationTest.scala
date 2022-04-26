@@ -26,9 +26,13 @@ class KeyValueTest extends AnyFunSuite {
   ).foreach(name =>
 
     test(name) {
-      println(s"\n-- $name --")
+
       val entries = KeyValueParser.parseFile(name)
+      val startTime = System.nanoTime
       val (obtained, _) = specification.checkEntries(entries, verbosity = Verbosity.Debug)
+      val endTime = System.nanoTime
+
+      println(s"\n-- kv $name ${endTime - startTime} --")
 
       val expected =
         if (name.endsWith("-bad")) CheckResult.Illegal

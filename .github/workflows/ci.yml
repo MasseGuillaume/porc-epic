@@ -17,4 +17,4 @@ jobs:
       with:
         jvm: 11
         apps: sbtn
-    - run: sbtn test
+    - run: sbtn test it:test

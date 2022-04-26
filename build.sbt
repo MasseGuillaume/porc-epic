@@ -28,8 +28,11 @@ lazy val circe = {
 
 libraryDependencies ++= circe ++
   Seq(
-    "org.scalatest" %% "scalatest" % "3.2.11" % Test,
-    "org.scala-lang.modules" %% "scala-parser-combinators" % "2.1.1" % Test
+    "org.scalatest" %% "scalatest" % "3.2.11" % "it,test",
+    "org.scala-lang.modules" %% "scala-parser-combinators" % "2.1.1" % IntegrationTest
   )
 
-
+configs(IntegrationTest)
+Defaults.itSettings
+IntegrationTest / parallelExecution := false
+enablePlugins(JmhPlugin)
