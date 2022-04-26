@@ -34,13 +34,13 @@ class KeyValueTest extends AnyFunSuite {
       val (obtained, _) = specification.checkEntries(entries, verbosity = Verbosity.Debug)
       val endTime = System.nanoTime
 
-      import java.nio.file._
-      import java.nio.charset.StandardCharsets
-      Files.write(
-        Paths.get("tests"),
-        s"kv ${name.padTo(10, ' ')} ${leftPad((endTime - startTime).toString)(20, ' ')}\n".getBytes(StandardCharsets.UTF_8),
-        StandardOpenOption.APPEND
-      )
+      // import java.nio.file._
+      // import java.nio.charset.StandardCharsets
+      // Files.write(
+      //   Paths.get("tests"),
+      //   s"kv ${name.padTo(10, ' ')} ${leftPad((endTime - startTime).toString)(20, ' ')}\n".getBytes(StandardCharsets.UTF_8),
+      //   StandardOpenOption.APPEND
+      // )
 
       val expected =
         if (name.endsWith("-bad")) CheckResult.Illegal
