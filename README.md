@@ -1,8 +1,13 @@
 # Porc-épic [![Build Status](https://github.com/MasseGuillaume/porc-epic/actions/workflows/ci.yml/badge.svg)](https://github.com/MasseGuillaume/porc-epic/actions?query=workflow%3Aci)
 
-Scala re-implementation of https://github.com/anishathalye/porcupine, please reade the original project README. 
+Scala re-implementation of https://github.com/anishathalye/porcupine, please read the original project README. 
 
 ## Usage
+
+```sbt
+scalaVersion := "3.1.0" // I only published for Scala 3 so far
+libraryDependencies += "com.github.masseguillaume" %% "porc-epic % "0.0.0+29-e0ec9714-SNAPSHOT"
+```
 
 Defining a specification:
 
