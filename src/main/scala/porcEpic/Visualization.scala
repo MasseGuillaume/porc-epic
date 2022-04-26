@@ -7,6 +7,7 @@ import io.circe.syntax._
 import io.circe.generic.semiauto._
 
 import java.nio.file._
+import java.io.File
 
 object HistoryElement {
   implicit val clientIdEncoder: Encoder[ClientId] = Encoder.encodeInt.contramap(ClientId.toInt)
@@ -56,9 +57,25 @@ case class PartitionVisualizationData(
 type VisualizationData = List[PartitionVisualizationData]
 
 extension (data: List[PartitionVisualizationData]) {
-  def save(filename: String): Unit = {
+  def save(): File = {
+    val dir = Files.createTempDirectory("porc-epic").toAbsolutePath
     val json = data.asJson.spaces2
-    Files.writeString(Paths.get(filename), s"const data = $json")
+    Files.writeString(dir.resolve("data.js"), s"const data = $json")
+
+    def copyResource(filename: String): Unit = {
+      val input = getClass.getResourceAsStream(s"/visualization/$filename")
+
+      try Files.copy(input, dir.resolve(filename))
+      finally input.close()
+    }
+
+    List(
+      "app.js",
+      "style.css",
+      "visualization.html"
+    ).foreach(copyResource)
+
+    dir.toFile
   }
 }
 

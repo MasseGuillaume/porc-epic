@@ -30,15 +30,7 @@ class EtcdTest extends AnyFunSuite {
     test(s"etcd $name") {
       println(s"\n-- etcd $name --")
       val entries = EtcdParser.parseFile(name)
-      val (obtained, info) = specification.checkEntries(entries, verbosity = Verbosity.Debug)
-
-      val data = 
-        specification.visualize(
-          info.get,
-          describeOperation,
-          describeState
-        )
-      data.save("data.js")
+      val (obtained, _) = specification.checkEntries(entries, verbosity = Verbosity.Debug)
 
       val expected = 
         if (linearizableTests.contains(name)) CheckResult.Ok

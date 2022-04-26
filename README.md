@@ -1,6 +1,6 @@
 # Porc-épic [![Build Status](https://github.com/MasseGuillaume/porc-epic/actions/workflows/ci.yml/badge.svg)](https://github.com/MasseGuillaume/porc-epic/actions?query=workflow%3Aci)
 
-Scala re-implementation of https://github.com/anishathalye/porcupine, please read the original project README. 
+Scala re-implementation of [Porcupine](https://github.com/anishathalye/porcupine), please read the original project README.
 
 ## Usage
 
@@ -51,9 +51,7 @@ val model = new OperationSpecification[State, Input, Output]{
   // benefit of P-compositionality since it will check linearizability in parallel
 }
 
-
 // Non-linearizable history defined with operations (call-return)
-
 val history = List[Operation[Input, Output]](
   Operation(OperationId(1), ClientId(0), Put(state(1)), output(0), invocation = Time(0), response = Time(10)),
   Operation(OperationId(2), ClientId(1), Get,           output(1), invocation = Time(2), response = Time(7)),
@@ -64,6 +62,8 @@ val history = List[Operation[Input, Output]](
 val (result, Some(info)) = model.checkOperations(history)
 assert(result == CheckResult.Illegal)
 
-// 
-model.visualize(info, describeOperation, describeState).save("data.js")
+// Generates a visualization for histories and linearization points
+model.visualize(info, describeOperation, describeState).save()
+
+// Creates a temp folder
 ```

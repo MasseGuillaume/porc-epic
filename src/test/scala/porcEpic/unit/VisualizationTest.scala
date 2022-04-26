@@ -23,9 +23,7 @@ class VisualizationTest extends AnyFunSuite {
       Operation(OperationId(2), ClientId(1), Get,           Output(1), invocation = Time(2), response = Time(7)),
       Operation(OperationId(3), ClientId(2), Get,           Output(0), invocation = Time(3), response = Time(7)),
     )
-    val (result, Some(info)) = model.checkOperations(history)
-    assert(info.partialLinearizations == List(List(List(0, 1))))
-    assert(result == CheckResult.Illegal)
+    val (_, Some(info)) = model.checkOperations(history)
 
     val data = 
       model.visualize(
@@ -54,7 +52,7 @@ class VisualizationTest extends AnyFunSuite {
     //     )
     // )
 
-    data.save("data-test.js")
+    println(data.save())
   }
 
   test("linearizable") {
@@ -70,8 +68,6 @@ class VisualizationTest extends AnyFunSuite {
         describeOperation,
         describeState
       )
-    
-    assert(data.length == 1)
     
     // assert(
     //   data.head.LargestIndex == 
@@ -93,6 +89,6 @@ class VisualizationTest extends AnyFunSuite {
     //     )
     // )
 
-    data.save("data2-test.js")
+    println(data.save())
   }
 }
