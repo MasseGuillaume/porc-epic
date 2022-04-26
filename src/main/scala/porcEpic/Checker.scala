@@ -4,7 +4,8 @@ import scala.concurrent.{Await, Future, ExecutionContext}
 import scala.concurrent.duration.{FiniteDuration, Duration}
 import scala.collection.mutable.{Map => MMap}
 
-import java.util.BitSet
+import java.util.{BitSet, Stack}
+
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.{Executors, TimeUnit, Callable, CountDownLatch}
 import java.util.concurrent.atomic.AtomicLong
@@ -147,7 +148,7 @@ extension [S, I, O](specification: Specification[S, I, O]) {
       )
     }
 
-    var calls = Stack.empty[CallEntry]
+    var calls = new Stack[CallEntry]()
     val longest = Array.ofDim[List[OperationId]](n)
     var state = specification.initialState
 
@@ -195,16 +196,16 @@ extension [S, I, O](specification: Specification[S, I, O]) {
           }
 
         case r: EntryNode.Return[_, _] =>
-          val callsLength = calls.length
+          val callsLength = calls.size
           if (callsLength == 0) {
             return (false, longest.toList.filter(_ != null))
           }
           var seq: List[OperationId] = null
-          calls.foreach { v =>
+          calls.forEach { v =>
             if (longest(OperationId.toInt(v.entry.elem.id)) == null || 
                 callsLength > longest(OperationId.toInt(v.entry.elem.id)).length) {
               if (seq == null) {
-                seq = calls.reverse.map(_.entry.elem.id)
+                seq = calls.map(_.entry.elem.id)
               }
               longest(OperationId.toInt(v.entry.elem.id)) = seq
             }
@@ -219,7 +220,7 @@ extension [S, I, O](specification: Specification[S, I, O]) {
       }
     } // while
 
-    val seq = calls.reverse.map(_.entry.elem.id)
+    val seq = calls.map(_.entry.elem.id)
     {
       var i = 0
       while(i < n) {
@@ -259,21 +260,16 @@ given EntryOrderingByTime[I, O]: Ordering[Entry[I, O]] =
     )
   )
 
-object Stack {
-  def empty[T]: Stack[T] = new Stack[T](Nil)
-}
-
-class Stack[T](var xs: List[T]) {
-  def push(x: T): Unit = xs = x :: xs
-  def pop: T = {
-    val t = xs.head
-    xs = xs.tail
-    t
+extension [T](stack: Stack[T]) {
+    def map[B](f: T => B): List[B] = {
+      val builder = List.newBuilder[B]
+      stack.forEach { v =>
+        builder += f(v)
+      }
+      
+      builder.result
+    }
   }
-  def length: Int = xs.length
-  def foreach(f: T => Unit): Unit = xs.foreach(f)
-  def reverse: List[T] = xs.reverse
-}
 
 private [porcEpic] def leftPad(a: String)(length: Int, pad: Char): String =
   (pad.toString * (length - a.length)) + a
