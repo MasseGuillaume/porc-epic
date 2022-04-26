@@ -1,4 +1,4 @@
-# Porc-épic [![Build Status](https://github.com/MasseGuillaume/porc-epic/workflows/ci/badge.svg)](https://github.com/MasseGuillaume/porc-epic/actions?query=workflow%3Aci)
+# Porc-épic [![Build Status](https://github.com/MasseGuillaume/porc-epic/actions/workflows/ci/badge.svg)](https://github.com/MasseGuillaume/porc-epic/actions?query=workflow%3Aci)
 
 Scala re-implementation of https://github.com/anishathalye/porcupine, please reade the original project README. 
 
