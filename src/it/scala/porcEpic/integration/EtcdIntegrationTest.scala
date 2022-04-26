@@ -27,13 +27,21 @@ class EtcdTest extends AnyFunSuite {
     .foreach(name =>
 
     test(s"etcd $name") {
-      val entries = EtcdParser.parseFile(name)
+      println(s"\n-- etcd $name --")
 
+      val entries = EtcdParser.parseFile(name)
       val startTime = System.nanoTime
       val (obtained, _) = specification.checkEntries(entries, verbosity = Verbosity.Debug)
       val endTime = System.nanoTime
 
-      println(s"\n-- etcd $name ${endTime - startTime} --")
+      import java.nio.file._
+      import java.nio.charset.StandardCharsets
+      Files.write(
+        Paths.get("tests"),
+        s"etcd ${name.padTo(10, ' ')} ${leftPad((endTime - startTime).toString)(10, ' ')}\n".getBytes(StandardCharsets.UTF_8),
+        StandardOpenOption.APPEND
+      )
+
 
       val expected = 
         if (linearizableTests.contains(name)) CheckResult.Ok

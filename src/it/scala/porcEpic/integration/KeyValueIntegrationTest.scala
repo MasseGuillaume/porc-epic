@@ -27,12 +27,20 @@ class KeyValueTest extends AnyFunSuite {
 
     test(name) {
 
+      println(s"\n-- kv $name --")
+
       val entries = KeyValueParser.parseFile(name)
       val startTime = System.nanoTime
       val (obtained, _) = specification.checkEntries(entries, verbosity = Verbosity.Debug)
       val endTime = System.nanoTime
 
-      println(s"\n-- kv $name ${endTime - startTime} --")
+      import java.nio.file._
+      import java.nio.charset.StandardCharsets
+      Files.write(
+        Paths.get("tests"),
+        s"kv ${name.padTo(10, ' ')} ${leftPad((endTime - startTime).toString)(20, ' ')}\n".getBytes(StandardCharsets.UTF_8),
+        StandardOpenOption.APPEND
+      )
 
       val expected =
         if (name.endsWith("-bad")) CheckResult.Illegal
