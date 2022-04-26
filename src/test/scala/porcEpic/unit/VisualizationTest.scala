@@ -36,23 +36,23 @@ class VisualizationTest extends AnyFunSuite {
 
     assert(data.length == 1)
 
-    assert(
-      data.head.LargestIndex ==
-        Map(
-          0 -> 0,
-          1 -> 0
-        )
-    )
+    // assert(
+    //   data.head.LargestIndex ==
+    //     Map(
+    //       0 -> 0,
+    //       1 -> 0
+    //     )
+    // )
 
-    assert(
-      data.head.PartialLinearizations ==
-        List(
-          List(
-            LinearizationStep(OperationId(0), "1"),
-            LinearizationStep(OperationId(1), "1")
-          )
-        )
-    )
+    // assert(
+    //   data.head.PartialLinearizations ==
+    //     List(
+    //       List(
+    //         LinearizationStep(OperationId(0), "1"),
+    //         LinearizationStep(OperationId(1), "1")
+    //       )
+    //     )
+    // )
 
     data.save("data-test.js")
   }
@@ -73,25 +73,25 @@ class VisualizationTest extends AnyFunSuite {
     
     assert(data.length == 1)
     
-    assert(
-      data.head.LargestIndex == 
-        Map(
-          0 -> 0,
-          1 -> 0,
-          2 -> 0
-        )
-    )
+    // assert(
+    //   data.head.LargestIndex == 
+    //     Map(
+    //       0 -> 0,
+    //       1 -> 0,
+    //       2 -> 0
+    //     )
+    // )
 
-    assert(
-      data.head.PartialLinearizations ==
-        List(
-          List(
-            LinearizationStep(OperationId(2), "0"),
-            LinearizationStep(OperationId(0), "1"),
-            LinearizationStep(OperationId(1), "1")
-          )
-        )
-    )
+    // assert(
+    //   data.head.PartialLinearizations ==
+    //     List(
+    //       List(
+    //         LinearizationStep(OperationId(2), "0"),
+    //         LinearizationStep(OperationId(0), "1"),
+    //         LinearizationStep(OperationId(1), "1")
+    //       )
+    //     )
+    // )
 
     data.save("data2-test.js")
   }
