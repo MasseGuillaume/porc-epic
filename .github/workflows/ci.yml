@@ -12,7 +12,9 @@ jobs:
       with:
         fetch-depth: 0
         submodules: true
-    - uses: olafurpg/setup-scala@v13
+    - uses: coursier/cache-action@v6
+    - uses: coursier/setup-action@v1
       with:
-        java-version: graalvm@21.1.0
-    - run: sbt test
+        jvm: graalvm:21
+        apps: sbtn
+    - run: sbtn test
