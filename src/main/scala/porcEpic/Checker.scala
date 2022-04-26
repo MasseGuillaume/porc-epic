@@ -2,8 +2,9 @@ package porcEpic
 
 import scala.concurrent.{Await, Future, ExecutionContext}
 import scala.concurrent.duration.{FiniteDuration, Duration}
-import scala.collection.mutable.{BitSet => MBitset, Map => MMap}
+import scala.collection.mutable.{Map => MMap}
 
+import java.util.BitSet
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.{Executors, TimeUnit, Callable, CountDownLatch}
 import java.util.concurrent.atomic.AtomicLong
@@ -130,18 +131,13 @@ extension [S, I, O](specification: Specification[S, I, O]) {
 
   private def checkSingle(history: List[Entry[I, O]], killSwitch: AtomicBoolean): (Boolean, List[List[OperationId]]) = {
     
-    case class CacheEntry(linearized: MBitset, state: S)
+    case class CacheEntry(linearized: BitSet, state: S)
     case class CallEntry(entry: EntryLinkedList[I, O], state: S)
-
-    extension (bitset: MBitset) {
-      def set(v: OperationId): MBitset = bitset += OperationId.toInt(v)
-      def clear(v: OperationId): MBitset = bitset -= OperationId.toInt(v)
-    }
 
     var entry = EntryLinkedList(history)
 
     val n = entry.length / 2
-    val linearized = MBitset.fromBitMaskNoCopy(Array.ofDim(n))
+    val linearized = new BitSet(n)
     val cache = MMap.empty[Int, List[CacheEntry]].withDefaultValue(Nil)
 
     def cacheContains(entry: CacheEntry): Boolean = {
@@ -180,14 +176,15 @@ extension [S, I, O](specification: Specification[S, I, O]) {
           val (isLinearizable, newState) = specification.apply(state, node.input, matching.output)
 
           if (isLinearizable) {
-            val newLinearized = linearized.clone().set(node.id)
+            val newLinearized = linearized.clone().asInstanceOf[BitSet]
+            newLinearized.set(OperationId.toInt(node.id))
             val newCacheEntry = CacheEntry(newLinearized, newState)
             if (!cacheContains(newCacheEntry)) {
               val hash = newLinearized.hashCode
               cache(hash) = newCacheEntry :: cache(hash)
               calls.push(CallEntry(entry, state))
               state = newState
-              linearized.set(node.id)
+              linearized.set(OperationId.toInt(node.id))
               entry.lift()
               entry = headEntry.next
             } else {
@@ -215,7 +212,7 @@ extension [S, I, O](specification: Specification[S, I, O]) {
           val callTop = calls.pop
           entry = callTop.entry
           state = callTop.state
-          linearized.clear(entry.elem.id)
+          linearized.clear(OperationId.toInt(entry.elem.id))
           
           entry.unlift()
           entry = entry.next
