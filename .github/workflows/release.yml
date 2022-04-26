@@ -15,7 +15,7 @@ jobs:
         submodules: true
     - uses: olafurpg/setup-scala@v13
       with:
-        java-version: graalvm@
+        java-version: graalvm@21.1.0
     - run: sbt ci-release
       env:
         PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}

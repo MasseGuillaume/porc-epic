@@ -14,5 +14,5 @@ jobs:
         submodules: true
     - uses: olafurpg/setup-scala@v13
       with:
-        java-version: graalvm@
+        java-version: graalvm@21.1.0
     - run: sbt test

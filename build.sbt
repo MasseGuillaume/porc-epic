@@ -1,4 +1,5 @@
-inScope(ThisBuild)(
+
+inThisBuild(
   List(
     scalaVersion := "3.1.0",
 
