@@ -35,4 +35,3 @@ libraryDependencies ++= circe ++
 configs(IntegrationTest)
 Defaults.itSettings
 IntegrationTest / parallelExecution := false
-enablePlugins(JmhPlugin)
