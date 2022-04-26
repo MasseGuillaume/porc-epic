@@ -1,4 +1,20 @@
-ThisBuild / scalaVersion := "3.1.0"
+inScope(ThisBuild)(
+  List(
+    scalaVersion := "3.1.0",
+
+    organization := "com.github.masseguillaume",
+    homepage := Some(url("https://github.com/MasseGuillaume/porc-epic")),
+    licenses := List(License.MIT),
+    developers := List(
+      Developer(
+        "MasseGuillaume",
+        "Guillaume Massé",
+        "masgui@gmail.com",
+        url("https://github.com/masseguillaume")
+      )
+    )
+  )
+)
 
 lazy val circe = {
   val circeVersion = "0.14.1"

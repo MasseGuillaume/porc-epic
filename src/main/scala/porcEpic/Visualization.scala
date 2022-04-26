@@ -62,6 +62,8 @@ extension (data: List[PartitionVisualizationData]) {
   }
 }
 
+given timeOrdering: Ordering[Time] = Ordering.by(Time.toLong)
+
 extension [S, I, O](specification: Specification[S, I, O])(using ci: ClassTag[I], co: ClassTag[O]) {
   def visualize(
       info: LinearizationInfo[I, O],
@@ -80,6 +82,11 @@ extension [S, I, O](specification: Specification[S, I, O])(using ci: ClassTag[I]
       val returnValue = Array.ofDim[O](n)
       val operations = Entry.toOperations(partition)
 
+      val history = 
+        operations
+          .map(operation => HistoryElement(operation, describeOperation))
+          .sortBy(element => (element.Start, element.End))
+
       operations.foreach { operation =>
         callValue(OperationId.toInt(operation.id)) = operation.input
         returnValue(OperationId.toInt(operation.id)) = operation.output
@@ -87,7 +94,6 @@ extension [S, I, O](specification: Specification[S, I, O])(using ci: ClassTag[I]
 
       val largestIndex = scala.collection.mutable.Map.empty[Int, Int]
       val largestSize = Array.ofDim[Int](n)
-      
 
       val partialLinearizations =
         info.partialLinearizations(i).sortBy(_.length).zipWithIndex.map{ (partial, i) =>
@@ -117,7 +123,7 @@ extension [S, I, O](specification: Specification[S, I, O])(using ci: ClassTag[I]
         }
 
       PartitionVisualizationData(
-        History = operations.map(operation => HistoryElement(operation, describeOperation)),
+        History = history,
         PartialLinearizations = partialLinearizations,
         LargestIndex = largestIndex.toMap
       )
