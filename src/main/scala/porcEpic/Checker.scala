@@ -2,9 +2,8 @@ package porcEpic
 
 import scala.concurrent.{Await, Future, ExecutionContext}
 import scala.concurrent.duration.{FiniteDuration, Duration}
-import scala.collection.mutable.{Map => MMap}
 
-import java.util.{BitSet, Stack}
+import java.util.{BitSet, Stack, HashMap}
 
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.{Executors, TimeUnit, Callable, CountDownLatch}
@@ -139,7 +138,9 @@ extension [S, I, O](specification: Specification[S, I, O]) {
 
     val n = entry.length / 2
     val linearized = new BitSet(n)
-    val cache = MMap.empty[Int, List[CacheEntry]].withDefaultValue(Nil)
+    val cache = new HashMap[Int, List[CacheEntry]]
+
+      // MMap.empty[Int, List[CacheEntry]].withDefaultValue(Nil)
 
     def cacheContains(entry: CacheEntry): Boolean = {
       cache.getOrElse(entry.linearized.hashCode, Nil).exists( elem =>
@@ -182,7 +183,10 @@ extension [S, I, O](specification: Specification[S, I, O]) {
             val newCacheEntry = CacheEntry(newLinearized, newState)
             if (!cacheContains(newCacheEntry)) {
               val hash = newLinearized.hashCode
-              cache(hash) = newCacheEntry :: cache(hash)
+              val existing = 
+                if (cache.containsKey(hash)) cache.get(hash)
+                else Nil
+              cache.put(hash, newCacheEntry :: existing)
               calls.push(CallEntry(entry, state))
               state = newState
               linearized.set(OperationId.toInt(node.id))
@@ -234,14 +238,14 @@ extension [S, I, O](specification: Specification[S, I, O]) {
 }
 
 def renumber[I, O](events: List[Entry[I, O]]): List[Entry[I, O]] = {
-  val renumbering = MMap.empty[OperationId, OperationId]
+  val renumbering = new HashMap[OperationId, OperationId]
   var id = 0
 
   events.map{ event =>
     event.withId(
       renumbering.getOrElse(event.id, {
         val i = id
-        renumbering(event.id) = OperationId(id)
+        renumbering.put(event.id, OperationId(id))
         id += 1
         OperationId(i)
       })
@@ -270,6 +274,13 @@ extension [T](stack: Stack[T]) {
       builder.result
     }
   }
+
+extension [K, V](map: HashMap[K, V]) {
+  def getOrElse(k: K, other: => V): V = {
+    if (map.containsKey(k)) map.get(k)
+    else other
+  }
+}
 
 private [porcEpic] def leftPad(a: String)(length: Int, pad: Char): String =
   (pad.toString * (length - a.length)) + a
