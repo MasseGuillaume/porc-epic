@@ -15,6 +15,6 @@ jobs:
     - uses: coursier/cache-action@v6
     - uses: coursier/setup-action@v1
       with:
-        jvm: 17
+        jvm: 11
         apps: sbtn
     - run: sbtn test
