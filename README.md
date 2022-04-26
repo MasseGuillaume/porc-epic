@@ -1,6 +1,7 @@
 # Porc-épic [![Build Status](https://github.com/MasseGuillaume/porc-epic/actions/workflows/ci.yml/badge.svg)](https://github.com/MasseGuillaume/porc-epic/actions?query=workflow%3Aci)
 
-Scala re-implementation of [Porcupine](https://github.com/anishathalye/porcupine), please read the original project README.
+Scala re-implementation of [Porcupine](https://github.com/anishathalye/porcupine) by 
+Anish Athalye, please read the original project README.
 
 ## Usage
 
