@@ -18,7 +18,7 @@ jobs:
       with:
         jvm: 11
         apps: sbtn
-    - run: sbtn it:test ci-release
+    - run: sbtn "it:test ci-release"
       env:
         PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
         PGP_SECRET: ${{ secrets.PGP_SECRET }}
