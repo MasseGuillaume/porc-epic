@@ -111,6 +111,8 @@ extension [S, I, O](specification: Specification[S, I, O]) {
           tasksCountLatch.await()
           true
       }
+
+    threadPool.shutdown()
       
     if (allDone && !timedout) {
       val resultOutput = 

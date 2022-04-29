@@ -36,13 +36,10 @@ testFrameworks += new TestFramework("munit.Framework")
 lazy val porcEpic = project.in(file("."))
 
 lazy val integration = project.in(file("integration")).settings(
-    // "org.typelevel" %% "cats-parse" % "0.3.7-10-5592775-SNAPSHOT" % IntegrationTest,
   libraryDependencies ++= Seq("org.typelevel" %% "cats-parse" % "0.3.7") ++ munit,
   Test / parallelExecution := false,
   buildInfoPackage := "build",
-  buildInfoKeys ++= Seq[BuildInfoKey](
-    "porcupine" -> file("porcupine").getAbsolutePath()
-  )
+  buildInfoKeys ++= Seq[BuildInfoKey]("porcupine" -> file("porcupine").getAbsolutePath)
 ).dependsOn(porcEpic).enablePlugins(BuildInfoPlugin)
 
 lazy val bench = project.dependsOn(porcEpic, integration).enablePlugins(JmhPlugin)
