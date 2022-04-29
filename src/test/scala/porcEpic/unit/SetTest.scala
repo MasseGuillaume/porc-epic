@@ -1,9 +1,7 @@
 package porcEpic
 package unit
 
-import org.scalatest.funsuite.AnyFunSuite
-
-class SetTest extends AnyFunSuite {
+class SetTest extends munit.FunSuite {
 
   import specification.SetModel._
   
@@ -17,7 +15,7 @@ class SetTest extends AnyFunSuite {
       Operation(opid(3), cid(2), Read, Output.Read(State(100)), invocation = t(2), response = t(3)),
     )
     val (result, info) = specification.checkOperations(ops)
-    assert(result == CheckResult.Ok)
+    assertEquals(result, CheckResult.Ok)
   }
 
   test("set 02") {
@@ -27,7 +25,7 @@ class SetTest extends AnyFunSuite {
       Operation(opid(3), cid(2), Read, Output.Read(State(100, 110)), invocation = t(2), response = t(3)),
     )
     val (result, info) = specification.checkOperations(ops)
-    assert(result == CheckResult.Ok)
+    assertEquals(result, CheckResult.Ok)
   }
 
   test("set 03") {
@@ -37,7 +35,7 @@ class SetTest extends AnyFunSuite {
       Operation(opid(3), cid(2), Read, Output.UnknowRead, invocation = t(2), response = t(3)),
     )
     val (result, info) = specification.checkOperations(ops)
-    assert(result == CheckResult.Ok)
+    assertEquals(result, CheckResult.Ok)
   }
 
   test("set 04") {
@@ -47,6 +45,6 @@ class SetTest extends AnyFunSuite {
       Operation(opid(3), cid(2), Read, Output.Read((State())), invocation = t(3), response = t(4)),
     )
     val (result, info) = specification.checkOperations(ops)
-    assert(result == CheckResult.Illegal)
+    assertEquals(result, CheckResult.Illegal)
   }
 }

@@ -3,9 +3,7 @@ package unit
 
 import TestData.history
 
-import org.scalatest.funsuite.AnyFunSuite
-
-class EntryLinkedListTest extends AnyFunSuite {
+class EntryLinkedListTest extends munit.FunSuite {
 
   val entries = Entry.fromOperations(history)
 
@@ -19,7 +17,7 @@ class EntryLinkedListTest extends AnyFunSuite {
          |  3,
          |)""".stripMargin
     
-    assert(obtained == expected)
+    assertEquals(obtained, expected)
   }
 
   test("EntryLinkedList") {
@@ -36,10 +34,10 @@ class EntryLinkedListTest extends AnyFunSuite {
          |  Return(1, 1),
          |)""".stripMargin
 
-    assert(obtained == expected)
+    assertEquals(obtained, expected)
   }
 
   test("length"){
-    assert(EntryLinkedList(entries).length == 8)
+    assertEquals(EntryLinkedList(entries).length, 8)
   }
 }

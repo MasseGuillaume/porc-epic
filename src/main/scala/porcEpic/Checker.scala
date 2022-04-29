@@ -45,7 +45,7 @@ extension [S, I, O](specification: Specification[S, I, O]) {
 
     val totalTasksCount = partitionnedHistory.size
 
-    val processors = Runtime.getRuntime().availableProcessors()
+    val processors = Runtime.getRuntime().availableProcessors() / 2
     val threadPool = Executors.newFixedThreadPool(processors)
     var result = true
     val longest = Array.ofDim[List[List[OperationId]]](totalTasksCount)

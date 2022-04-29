@@ -3,12 +3,16 @@ package parser
 
 import specification.KeyValue
 
-import scala.util.parsing.combinator.RegexParsers
-import scala.util.parsing.combinator.lexical.Lexical
+import cats.parse.Parser
+import cats.parse.Numbers.nonNegativeIntString
+import cats.parse.Parser.{string, char, charsWhile0}
+import cats.parse.Rfc5234.{digit, sp}
+
+import cats.implicits.toShow
 
 import scala.io.Source
 
-object KeyValueParser extends RegexParsers {
+object KeyValueParser {
   enum EntryType:
     case Invoke
     case Ok
@@ -74,46 +78,41 @@ object KeyValueParser extends RegexParsers {
   }
 
   def apply(input: String): KeyValueEntry = 
-    parseAll(root, input) match {
-      case Success(result, _) => result
-      case failure: NoSuccess =>
-        val offset = failure.next.offset
-        val carret = (1 to offset).map(_ => " ").mkString("") + "^"
-        throw new Exception(
-          s"""|${failure.msg}
-              |$input
-              |$carret""".stripMargin
-        )
-    }
+    root.parseAll(input).fold(
+      error => throw new Exception(".\n" + error.toString),
+      x => x
+    )
+
+  def digitInt : Parser[Int] = nonNegativeIntString.map(_.toInt)
+
+  def sep: Parser[Any] = string(",") ~ sp.rep
 
   def root: Parser[KeyValueEntry] =
-    "{" ~> 
-       (":process" ~> int <~ ",") ~
-       (":type" ~> entryType <~ ",") ~
-       (":f" ~> functionType <~ ",") ~
-       (":key " ~> string <~ ",") ~
-       (":value " ~> optString) <~
-    "}" ^^ {
-      case process ~ tpe ~ f ~ key ~ value =>
+    (
+       (string(":process") *> sp.rep *> digitInt     <* sep) ~
+       (string(":type")    *> sp.rep *> entryType    <* sep) ~
+       (string(":f")       *> sp.rep *> functionType <* sep) ~
+       (string(":key")     *> sp.rep *> quotedString <* sep) ~
+       (string(":value")   *> sp.rep *> optValue)
+    ).between(string("{"), string("}")).map {
+      case ((((process, tpe), f), key), value) =>
         KeyValueEntry(process, tpe, f, key, value)
     }
 
-  def int: Parser[Int] = """\d+""".r ^^ { _.toInt }
-
   def entryType: Parser[EntryType] =
-    ":invoke" ^^ { _ => EntryType.Invoke } |
-    ":ok"     ^^ { _ => EntryType.Ok }
+    string(":invoke").map( _ => EntryType.Invoke ) |
+    string(":ok").map( _ => EntryType.Ok )
 
   def functionType: Parser[FunctionType] =
-    ":get"    ^^ { _ => FunctionType.Get } |
-    ":put"    ^^ { _ => FunctionType.Put } |   
-    ":append" ^^ { _ => FunctionType.Append }
+    string(":get").map( _ => FunctionType.Get ) |
+    string(":put").map( _ => FunctionType.Put ) |   
+    string(":append").map( _ => FunctionType.Append )
 
-  val dq = '"'
-  def string: Parser[String] =
-    dq ~> rep(elem("string", _ != dq)) <~ dq ^^ { _.mkString("") }
+  def dq: Parser[Unit] = char('"')
 
-  def optString: Parser[Option[String]] =
-    "nil" ^^ { _ => None} | 
-    string.map(Some(_))
+  def quotedString: Parser[String] = (dq *> charsWhile0(_ != '"') <* dq)
+
+  def optValue: Parser[Option[String]] =
+    string("nil").map(_ => None) | 
+    quotedString.map(str => Some(str.trim))
 }

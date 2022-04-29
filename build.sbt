@@ -28,10 +28,19 @@ lazy val circe = {
 
 libraryDependencies ++= circe ++
   Seq(
-    "org.scalatest" %% "scalatest" % "3.2.11" % "it,test",
-    "org.scala-lang.modules" %% "scala-parser-combinators" % "2.1.1" % IntegrationTest
+    "org.scalameta" %% "munit" % "0.7.29" % "it,test",
+    // "org.typelevel" %% "cats-parse" % "0.3.7-10-5592775-SNAPSHOT" % IntegrationTest,
+    "org.typelevel" %% "cats-parse" % "0.3.7" % IntegrationTest,
   )
 
+testFrameworks += new TestFramework("munit.Framework")
+
+
+enablePlugins(JmhPlugin)
 configs(IntegrationTest)
 Defaults.itSettings
 IntegrationTest / parallelExecution := false
+
+lazy val porcEpic = project.in(file("."))
+
+lazy val bench = project.dependsOn()

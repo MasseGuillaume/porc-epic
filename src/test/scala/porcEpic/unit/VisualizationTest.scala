@@ -1,9 +1,7 @@
 package porcEpic
 package unit
 
-import org.scalatest.funsuite.AnyFunSuite
-
-class VisualizationTest extends AnyFunSuite {
+class VisualizationTest extends munit.FunSuite {
 
   import specification.Register._
   import Input._
@@ -32,18 +30,18 @@ class VisualizationTest extends AnyFunSuite {
         describeState
       )
 
-    assert(data.length == 1)
+    assertEquals(data.length, 1)
 
-    // assert(
-    //   data.head.LargestIndex ==
+    // assertEquals(
+    //   data.head.LargestIndex,
     //     Map(
     //       0 -> 0,
     //       1 -> 0
     //     )
     // )
 
-    // assert(
-    //   data.head.PartialLinearizations ==
+    // assertEquals(
+    //   data.head.PartialLinearizations,
     //     List(
     //       List(
     //         LinearizationStep(OperationId(0), "1"),
@@ -69,8 +67,8 @@ class VisualizationTest extends AnyFunSuite {
         describeState
       )
     
-    // assert(
-    //   data.head.LargestIndex == 
+    // assertEquals(
+    //   data.head.LargestIndex, 
     //     Map(
     //       0 -> 0,
     //       1 -> 0,
@@ -78,8 +76,8 @@ class VisualizationTest extends AnyFunSuite {
     //     )
     // )
 
-    // assert(
-    //   data.head.PartialLinearizations ==
+    // assertEquals(
+    //   data.head.PartialLinearizations,
     //     List(
     //       List(
     //         LinearizationStep(OperationId(2), "0"),

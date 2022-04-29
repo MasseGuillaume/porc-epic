@@ -3,12 +3,17 @@ package parser
 
 import specification.Etcd
 
-import scala.util.parsing.combinator.RegexParsers
-import scala.util.parsing.combinator.lexical.Lexical
+import cats.parse.Parser
+import cats.parse.Numbers.nonNegativeIntString
+import cats.parse.Parser.{string, charsWhile, Error, Expectation}
+import cats.parse.Rfc5234.{digit, wsp}
+
+import cats.implicits.toShow
+
 
 import scala.io.Source
 
-object EtcdParser extends RegexParsers {
+object EtcdParser {
   enum EntryType:
     case Invoke
     case Ok
@@ -120,51 +125,44 @@ object EtcdParser extends RegexParsers {
     events ::: unfinishedEvents
   }
 
-  def parse(input: String): EtcdEntry = 
-    parseAll(root, input) match {
-      case Success(result, _) => result
-      case failure: NoSuccess =>
-        val offset = failure.next.offset
-        val carret = (1 to offset).map(_ => " ").mkString("") + "^"
-        throw new Exception(
-          s"""|${failure.msg}
-              |$input
-              |$carret""".stripMargin
-        )
-    }
+  def parse(input: String): EtcdEntry =
+    root.parseAll(input).fold(
+      error => throw new Exception("...\n" + error.toString),
+      x => x
+    )
 
   def root: Parser[EtcdEntry] =
-    ("INFO  jepsen.util -" ~> process) ~ entryType ~ functionType ~ value ^^ {
-      case process ~ eTpe ~ fTpe ~ value =>
+    (
+      (
+        (string("INFO  jepsen.util -") ~ wsp.rep) *> process <* wsp.rep
+      ) ~ 
+      (entryType <* wsp.rep) ~ 
+      (functionType <* wsp.rep) ~ 
+      value
+    ).map {
+
+      case (((process, eTpe), fTpe), value) =>
         EtcdEntry(process, eTpe, fTpe, value)
     }
 
-  def process: Parser[ProcessId] = int.map(ProcessId.apply)
+  def process: Parser[ProcessId] = digitInt.map(ProcessId.apply)
 
-  def int: Parser[Int] = """\d+""".r ^^ { _.toInt }
+  def digitInt : Parser[Int] = nonNegativeIntString.map(_.toInt)
 
   def value: Parser[Val] = 
-    "[" ~> int ~ int <~ "]" ^^ { case a ~ b => Val.CasValue(a, b) } |
-    "nil" ^^ { _ => Val.Nil } |
-    ":timed-out" ^^ { _ => Val.Unknown } |
-    int ^^ { v => Val.Value(v) }
+    (string("[") *> (digitInt <* wsp.rep) ~ digitInt <* string("]")).map { case (a, b) => Val.CasValue(a, b) } |
+    string("nil").map(_ => Val.Nil ) |
+    string(":timed-out").map(_ => Val.Unknown ) |
+    digitInt.map(v => Val.Value(v) )
 
   def entryType: Parser[EntryType] =
-    ":invoke" ^^ { _ => EntryType.Invoke } |
-    ":ok"     ^^ { _ => EntryType.Ok } |
-    ":fail"   ^^ { _ => EntryType.Fail } |
-    ":info"   ^^ { _ => EntryType.Info }
+    string(":invoke").map(_ => EntryType.Invoke) |
+    string(":ok").map(_ => EntryType.Ok) |
+    string(":fail").map(_ => EntryType.Fail) |
+    string(":info").map(_ => EntryType.Info)
 
   def functionType: Parser[FunctionType] =
-    ":read"  ^^ { _ => FunctionType.Read } |
-    ":write" ^^ { _ => FunctionType.Write } |   
-    ":cas"   ^^ { _ => FunctionType.Cas }
-
-  val dq = '"'
-  def string: Parser[String] =
-    dq ~> rep(elem("string", _ != dq)) <~ dq ^^ { _.mkString("") }
-
-  def optString: Parser[Option[String]] =
-    "nil" ^^ { _ => None} | 
-    string.map(Some(_))
+    string(":read").map(_ => FunctionType.Read) |
+    string(":write").map(_ => FunctionType.Write) |   
+    string(":cas").map(_ => FunctionType.Cas)
 }

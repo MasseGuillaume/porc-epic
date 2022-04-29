@@ -1,9 +1,7 @@
 package porcEpic
 package unit
 
-import org.scalatest.funsuite.AnyFunSuite
-
-class RegisterTest extends AnyFunSuite {
+class RegisterTest extends munit.FunSuite {
 
   import specification.Register._
   import Input._
@@ -15,8 +13,8 @@ class RegisterTest extends AnyFunSuite {
       Operation(OperationId(3), ClientId(2), Get,           Output(0), invocation = Time(3), response = Time(7)),
     )
     val (result, info) = model.checkOperations(ops)
-    assert(info.get.partialLinearizations == List(List(List(2, 0, 1))))
-    assert(result == CheckResult.Ok)
+    assertEquals(info.get.partialLinearizations, List(List(List(OperationId(2), OperationId(0), OperationId(1)))))
+    assertEquals(result, CheckResult.Ok)
   }
 
   test("not-linearizable") {
@@ -26,7 +24,7 @@ class RegisterTest extends AnyFunSuite {
       Operation(OperationId(3), ClientId(2), Get,           Output(0), invocation = Time(5), response = Time(10)),
     )
     val (result, info) = model.checkOperations(ops)
-    assert(info.get.partialLinearizations == List(List(List(0, 1))))
-    assert(result == CheckResult.Illegal)
+    assertEquals(info.get.partialLinearizations, List(List(List(OperationId(0), OperationId(1)))))
+    assertEquals(result, CheckResult.Illegal)
   }
 }

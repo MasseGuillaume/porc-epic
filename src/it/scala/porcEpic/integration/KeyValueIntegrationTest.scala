@@ -1,12 +1,10 @@
 package porcEpic
 package integration
 
-import org.scalatest.funsuite.AnyFunSuite
-
 import specification.KeyValue._
 import parser.KeyValueParser
 
-class KeyValueTest extends AnyFunSuite {
+class KeyValueTest extends munit.FunSuite {
   
   def describeOperation(operation: Operation[Input, Output]): String = {
     operation.input match {
@@ -47,7 +45,7 @@ class KeyValueTest extends AnyFunSuite {
         else if (name.endsWith("-ok")) CheckResult.Ok
         else throw new Exception("invalid test name: " + name)
 
-      assert(obtained == expected)
+      assertEquals(obtained, expected)
     }
 
   )

@@ -4,14 +4,12 @@ package unit
 import TestData.{history, OperationKind}
 import OperationKind._
 
-import org.scalatest.funsuite.AnyFunSuite
-
-class EntryTest extends AnyFunSuite {
+class EntryTest extends munit.FunSuite {
   
   test("fromOperations"){
     val obtained = Entry.fromOperations(history)
     val expected = 
-      List(
+      List[Entry[(OperationKind, Int), Int]](
         Entry.Call   ((W, 0), Time(0), OperationId(0), ClientId(0)),
         Entry.Return (0     , Time(1), OperationId(0), ClientId(0)),
         Entry.Call   ((W, 1), Time(2), OperationId(1), ClientId(1)),
@@ -22,6 +20,6 @@ class EntryTest extends AnyFunSuite {
         Entry.Return (1     , Time(7), OperationId(1), ClientId(1))
       )
 
-    assert(obtained == expected)
+    assertEquals(obtained, expected)
   }
 }

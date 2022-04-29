@@ -1,12 +1,10 @@
 package porcEpic
 package integration
 
-import org.scalatest.funsuite.AnyFunSuite
-
 import specification.Etcd._
 import parser.EtcdParser
 
-class EtcdTest extends AnyFunSuite {
+class EtcdTest extends munit.FunSuite {
 
   def describeOperation(operation: Operation[Input, Output]): String = 
     (operation.input, operation.output) match {
@@ -30,9 +28,7 @@ class EtcdTest extends AnyFunSuite {
       println(s"\n-- etcd $name --")
 
       val entries = EtcdParser.parseFile(name)
-      val startTime = System.nanoTime
       val (obtained, _) = specification.checkEntries(entries, verbosity = Verbosity.Debug)
-      val endTime = System.nanoTime
 
       // import java.nio.file._
       // import java.nio.charset.StandardCharsets
@@ -45,9 +41,13 @@ class EtcdTest extends AnyFunSuite {
       val expected = 
         if (linearizableTests.contains(name)) CheckResult.Ok
         else CheckResult.Illegal
-      assert(obtained == expected)
+      assertEquals(obtained, expected)
     }
   )
+
+  test("large vizualization") {
+
+  }
 
   val linearizableTests = Set(
       "2",

@@ -1,10 +1,9 @@
 package porcEpic
 package unit
 
-import org.scalatest.funsuite.AnyFunSuite
 import porcEpic.specification.Etcd
 
-class EtcdParserTest extends AnyFunSuite {
+class EtcdParserTest extends munit.FunSuite {
   import parser.EtcdParser
   import EtcdParser._
   import EntryType._
@@ -28,9 +27,11 @@ class EtcdParserTest extends AnyFunSuite {
   parseTest("INFO  jepsen.util - 1 :fail :cas [0 3]"        , EtcdEntry(ProcessId(1), Fail,   Cas, CasValue(0, 3)))
   parseTest("INFO  jepsen.util - 1 :info :cas :timed-out"   , EtcdEntry(ProcessId(1), Info,   Cas, Unknown))
 
-  def parseTest(input: String, expected: EtcdParser.EtcdEntry): Unit =
+  def parseTest(input: String, expected: EtcdParser.EtcdEntry)(implicit
+      loc: munit.Location
+  ): Unit =
     test(input) {
       val obtained = parse(input)
-      assert(obtained == expected)
+      assertEquals(obtained, expected)
     }
 }
