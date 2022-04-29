@@ -47,3 +47,8 @@ object Etcd {
     }
   }
 }
+
+object EtcdTest {
+  private val missingTest = 95 // this test does not exists
+  val names = (0 to 102).filterNot(_ == missingTest).map(_.toString)
+}

@@ -1,10 +1,12 @@
 package porcEpic
 package integration
 
+import porcEpic.specification.EtcdTest
+
 import specification.Etcd._
 import parser.EtcdParser
 
-class EtcdTest extends munit.FunSuite {
+class EtcdIntegrationTest extends munit.FunSuite {
 
   def describeOperation(operation: Operation[Input, Output]): String = 
     (operation.input, operation.output) match {
@@ -18,38 +20,7 @@ class EtcdTest extends munit.FunSuite {
   def describeState(state: Option[State]): String =
     state.fold("null")(_.toString)
 
-  // 102
-  (0 to 102)
-    .filterNot(_ == 95) // this test does not exists
-    .map(_.toString)
-    .foreach(name =>
-
-    test(s"etcd $name") {
-      println(s"\n-- etcd $name --")
-
-      val entries = EtcdParser.parseFile(name)
-      val (obtained, _) = specification.checkEntries(entries, verbosity = Verbosity.Debug)
-
-      // import java.nio.file._
-      // import java.nio.charset.StandardCharsets
-      // Files.write(
-      //   Paths.get("tests"),
-      //   s"etcd ${name.padTo(10, ' ')} ${leftPad((endTime - startTime).toString)(10, ' ')}\n".getBytes(StandardCharsets.UTF_8),
-      //   StandardOpenOption.APPEND
-      // )
-
-      val expected = 
-        if (linearizableTests.contains(name)) CheckResult.Ok
-        else CheckResult.Illegal
-      assertEquals(obtained, expected)
-    }
-  )
-
-  test("large vizualization") {
-
-  }
-
-  val linearizableTests = Set(
+  private val linearizableTests = Set(
       "2",
       "5",
       "7",
@@ -73,5 +44,19 @@ class EtcdTest extends munit.FunSuite {
     "100",
     "101",
     "102",
-  )  
+  )
+  
+  EtcdTest.names.foreach(name =>
+    test(s"etcd $name") {
+      println(s"\n-- etcd $name --")
+
+      val entries = EtcdParser.parseFile(name)
+      val (obtained, _) = specification.checkEntries(entries, verbosity = Verbosity.Debug)
+
+      val expected = 
+        if (linearizableTests.contains(name)) CheckResult.Ok
+        else CheckResult.Illegal
+      assertEquals(obtained, expected)
+    }
+  )
 }

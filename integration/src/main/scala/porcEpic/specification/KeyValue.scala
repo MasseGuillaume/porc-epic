@@ -41,3 +41,14 @@ object KeyValue {
     }
   }
 }
+
+object KeyValueTest {
+  def names = List(
+    "c01-bad",
+    "c01-ok",
+    "c10-bad",
+    "c10-ok",
+    "c50-ok",
+    "c50-bad", // this test takes a bit more time
+  )
+}

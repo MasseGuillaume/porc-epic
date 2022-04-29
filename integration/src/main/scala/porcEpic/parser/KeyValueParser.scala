@@ -31,7 +31,7 @@ object KeyValueParser {
   )
 
   def parseFile(filename: String): List[Entry[KeyValue.Input, KeyValue.Output]] = {
-    val source = Source.fromFile(s"porcupine/test_data/kv/${filename}.txt")
+    val source = Source.fromFile(s"${build.BuildInfo.porcupine}/test_data/kv/${filename}.txt")
     val entries = source.getLines.map(KeyValueParser.apply)
 
     val processToId = collection.mutable.Map.empty[Int, OperationId]

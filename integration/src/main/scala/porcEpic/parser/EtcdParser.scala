@@ -49,7 +49,7 @@ object EtcdParser {
     import Etcd.State
     
     val filename = leftPad(index)(3, '0')
-    val source = Source.fromFile(s"porcupine/test_data/jepsen/etcd_${filename}.log")
+    val source = Source.fromFile(s"${build.BuildInfo.porcupine}/test_data/jepsen/etcd_${filename}.log")
     val entries = source.getLines.map(parse)
 
     val processToId = collection.mutable.Map.empty[Int, OperationId]

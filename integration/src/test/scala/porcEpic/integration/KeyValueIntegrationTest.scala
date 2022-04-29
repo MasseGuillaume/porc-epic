@@ -1,10 +1,11 @@
 package porcEpic
 package integration
 
+import porcEpic.specification.KeyValueTest
 import specification.KeyValue._
 import parser.KeyValueParser
 
-class KeyValueTest extends munit.FunSuite {
+class KeyValueIntegrationTest extends munit.FunSuite {
   
   def describeOperation(operation: Operation[Input, Output]): String = {
     operation.input match {
@@ -14,14 +15,7 @@ class KeyValueTest extends munit.FunSuite {
     }
   }
 
-  List(
-    "c01-bad",
-    "c01-ok",
-    "c10-bad",
-    "c10-ok",
-    "c50-ok",
-    "c50-bad", // this test takes a bit more time
-  ).foreach(name =>
+  KeyValueTest.names.foreach(name =>
 
     test(name) {
 
@@ -31,14 +25,6 @@ class KeyValueTest extends munit.FunSuite {
       val startTime = System.nanoTime
       val (obtained, _) = specification.checkEntries(entries, verbosity = Verbosity.Debug)
       val endTime = System.nanoTime
-
-      // import java.nio.file._
-      // import java.nio.charset.StandardCharsets
-      // Files.write(
-      //   Paths.get("tests"),
-      //   s"kv ${name.padTo(10, ' ')} ${leftPad((endTime - startTime).toString)(20, ' ')}\n".getBytes(StandardCharsets.UTF_8),
-      //   StandardOpenOption.APPEND
-      // )
 
       val expected =
         if (name.endsWith("-bad")) CheckResult.Illegal

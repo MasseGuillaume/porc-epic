@@ -26,21 +26,23 @@ lazy val circe = {
   ).map(_ % circeVersion)
 }
 
-libraryDependencies ++= circe ++
-  Seq(
-    "org.scalameta" %% "munit" % "0.7.29" % "it,test",
-    // "org.typelevel" %% "cats-parse" % "0.3.7-10-5592775-SNAPSHOT" % IntegrationTest,
-    "org.typelevel" %% "cats-parse" % "0.3.7" % IntegrationTest,
-  )
+lazy val munit = Seq("org.scalameta" %% "munit" % "0.7.29" % Test)
+
+libraryDependencies ++= circe ++ munit
 
 testFrameworks += new TestFramework("munit.Framework")
 
 
-enablePlugins(JmhPlugin)
-configs(IntegrationTest)
-Defaults.itSettings
-IntegrationTest / parallelExecution := false
-
 lazy val porcEpic = project.in(file("."))
 
-lazy val bench = project.dependsOn()
+lazy val integration = project.in(file("integration")).settings(
+    // "org.typelevel" %% "cats-parse" % "0.3.7-10-5592775-SNAPSHOT" % IntegrationTest,
+  libraryDependencies ++= Seq("org.typelevel" %% "cats-parse" % "0.3.7") ++ munit,
+  Test / parallelExecution := false,
+  buildInfoPackage := "build",
+  buildInfoKeys ++= Seq[BuildInfoKey](
+    "porcupine" -> file("porcupine").getAbsolutePath()
+  )
+).dependsOn(porcEpic).enablePlugins(BuildInfoPlugin)
+
+lazy val bench = project.dependsOn(porcEpic, integration).enablePlugins(JmhPlugin)
