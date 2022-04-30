@@ -25,10 +25,10 @@ class KeyValueBench {
 
   @Benchmark def kv_c01_bad: Unit = test("c01-bad")
   @Benchmark def kv_c01_ok: Unit  = test("c01-ok")
-  // @Benchmark def kv_c10_bad: Unit = test("c10-bad")
-  // @Benchmark def kv_c10_ok: Unit  = test("c10-ok")
-  // @Benchmark def kv_c50_ok: Unit  = test("c50-ok")
-  // @Benchmark def kv_c50_bad: Unit = test("c50-bad")
+  @Benchmark def kv_c10_bad: Unit = test("c10-bad")
+  @Benchmark def kv_c10_ok: Unit  = test("c10-ok")
+  @Benchmark def kv_c50_ok: Unit  = test("c50-ok")
+  @Benchmark def kv_c50_bad: Unit = test("c50-bad")
 }
 
 

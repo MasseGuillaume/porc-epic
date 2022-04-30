@@ -133,3 +133,10 @@ object KeyValue {
 ```scala
 val history = List[Entry[]]
 ```
+
+## Benchmark
+
+Benchmark                          Mode  Cnt  Score   Error  Units
+porcEpic.EtcdBench.etcd_000        avgt   25  2.329 ± 0.270  ms/op
+porcEpic.KeyValueBench.kv_c01_bad  avgt   25  0.248 ± 0.007  ms/op
+porcEpic.KeyValueBench.kv_c01_ok   avgt   25  0.266 ± 0.005  ms/op

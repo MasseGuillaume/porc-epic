@@ -142,8 +142,6 @@ extension [S, I, O](specification: Specification[S, I, O]) {
     val linearized = new BitSet(n)
     val cache = new HashMap[Int, List[CacheEntry]]
 
-      // MMap.empty[Int, List[CacheEntry]].withDefaultValue(Nil)
-
     def cacheContains(entry: CacheEntry): Boolean = {
       cache.getOrElse(entry.linearized.hashCode, Nil).exists( elem =>
         entry.linearized == elem.linearized && 
@@ -209,7 +207,7 @@ extension [S, I, O](specification: Specification[S, I, O]) {
           var seq: List[OperationId] = null
           calls.forEach { v =>
             if (longest(OperationId.toInt(v.entry.elem.id)) == null || 
-                callsLength > longest(OperationId.toInt(v.entry.elem.id)).length) {
+                longest(OperationId.toInt(v.entry.elem.id)).lengthCompare(callsLength) < 0) {
               if (seq == null) {
                 seq = calls.map(_.entry.elem.id)
               }

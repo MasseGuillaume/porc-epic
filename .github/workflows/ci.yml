@@ -4,6 +4,7 @@ on:
   push:
 jobs:
   test:
+    name: Build and Test
     runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
@@ -17,4 +18,4 @@ jobs:
       with:
         jvm: 11
         apps: sbtn
-    - run: sbtn ";test;it:test"
+    - run: sbtn ";test;integration/test"
