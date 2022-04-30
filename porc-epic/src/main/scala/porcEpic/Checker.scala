@@ -150,7 +150,7 @@ extension [S, I, O](specification: Specification[S, I, O]) {
     }
 
     var calls = new Stack[CallEntry]()
-    val longest = Array.ofDim[List[OperationId]](n)
+    val longest = Array.ofDim[Vector[OperationId]](n)
     var state = specification.initialState
 
     val sentinel = 
@@ -162,9 +162,11 @@ extension [S, I, O](specification: Specification[S, I, O]) {
       )
     val headEntry = sentinel.insertBefore(entry)
 
+    def fail = (false, longest.toList.filter(_ != null).map(_.toList))
+
     while (headEntry.next != null) {
       if (killSwitch.get) {
-        return (false, longest.toList)
+        return fail
       }
 
       entry.elem match {
@@ -202,9 +204,9 @@ extension [S, I, O](specification: Specification[S, I, O]) {
         case r: EntryNode.Return[_, _] =>
           val callsLength = calls.size
           if (callsLength == 0) {
-            return (false, longest.toList.filter(_ != null))
+            return fail
           }
-          var seq: List[OperationId] = null
+          var seq: Vector[OperationId] = null
           calls.forEach { v =>
             if (longest(OperationId.toInt(v.entry.elem.id)) == null || 
                 longest(OperationId.toInt(v.entry.elem.id)).lengthCompare(callsLength) < 0) {
@@ -233,7 +235,7 @@ extension [S, I, O](specification: Specification[S, I, O]) {
       }
     }
 
-    (true, longest.toList.filter(_ != null))
+    (true, longest.map(_.toList).toList.filter(_ != null))
   }
 }
 
@@ -265,8 +267,9 @@ given EntryOrderingByTime[I, O]: Ordering[Entry[I, O]] =
   )
 
 extension [T](stack: Stack[T]) {
-    def map[B](f: T => B): List[B] = {
-      val builder = List.newBuilder[B]
+    def map[B](f: T => B): Vector[B] = {
+      val builder = Vector.newBuilder[B]
+      builder.sizeHint(stack.size)
       stack.forEach { v =>
         builder += f(v)
       }

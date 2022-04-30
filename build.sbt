@@ -42,6 +42,8 @@ lazy val integration = project
   .settings(
     libraryDependencies ++= Seq("org.typelevel" %% "cats-parse" % "0.3.7"),
     Test / parallelExecution := false,
+    Test / fork := true,
+    Test / javaOptions += "-Xmx4G",
     buildInfoPackage := "build",
     buildInfoKeys ++= Seq[BuildInfoKey](
       "porcupine" -> file("porcupine").getAbsolutePath
