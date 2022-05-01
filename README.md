@@ -17,18 +17,21 @@ libraryDependencies += "com.github.masseguillaume" %% "porc-epic % "0.0.0+29-e0e
 
 ```scala
 object Register {
+
   opaque type State = Int
   object State {
     def apply(value: Int): State = value 
-  }
-  opaque type Output = State
-  object Output {
-    def apply(value: Int): Output = value 
   }
 
   enum Input:
     case Put(value: State)
     case Get
+
+  opaque type Output = State
+  object Output {
+    def apply(value: Int): Output = value 
+  }
+
 
   val specification = new OperationSpecification[State, Input, Output]{
     def initialState: State = 0
@@ -45,17 +48,19 @@ object Register {
 ### History
 
 ```scala
+import Register._
+import Input._
+
 // Non-linearizable history defined with operations (call-return)
 val history = List[Operation[Input, Output]](
-  Operation(OperationId(1), ClientId(0), Input.Put(state(1)), Output(0), invocation = Time(0), response = Time(10)),
-  Operation(OperationId(2), ClientId(1), Input.Get,           Output(1), invocation = Time(2), response = Time(7)),
-  Operation(OperationId(3), ClientId(2), Input.Get,           Output(0), invocation = Time(3), response = Time(7)),
+  Operation(OperationId(0), ClientId(0), Put(State(1)), Output(0), invocation = Time(0), response = Time(10)),
+  Operation(OperationId(1), ClientId(1), Get,           Output(1), invocation = Time(2), response = Time(7)),
+  Operation(OperationId(2), ClientId(2), Get,           Output(0), invocation = Time(3), response = Time(7)),
 )
 
 // Checking for linearizability
-val (result, Some(info)) = Register.specification.checkOperations(history)
+val (result, Some(info)) = specification.checkOperations(history)
 // result == CheckResult.Illegal
-
 ```
 
 ### Visualization
@@ -70,7 +75,7 @@ def describeOperation(operation: Operation[Input, Output]): String =
 def describeState(state: State): String = state.toString
 
 // Generates a temporary folder with a visualization for histories and linearization points
-Register.specification.visualize(info, describeOperation, describeState).save()
+specification.visualize(info, describeOperation, describeState).save()
 
 /*
 /tmp/porc-epic14498592030205251063
@@ -131,12 +136,28 @@ object KeyValue {
 ### History
 
 ```scala
-val history = List[Entry[]]
+import KeyValue._
+import Input._
+
+val history = List[Entry[Input, Output]](
+  Entry.Call(   Put("k", State("1")) , Time(0) , OperationId(0), ClientId(0)),
+  Entry.Return( Output("0")          , Time(10), OperationId(0), ClientId(0)),
+  Entry.Call(   Get("k")             , Time(2) , OperationId(2), ClientId(0)),
+  Entry.Return( Output("1")          , Time(7) , OperationId(2), ClientId(0)),
+  Entry.Call(   Get("k")             , Time(3) , OperationId(3), ClientId(0)),
+  Entry.Return( Output("0")          , Time(7) , OperationId(3), ClientId(0)),
+)
+
+val (result, _) = KeyValue.specification.checkEntries(history)
+// result == CheckResult.Illegal
 ```
 
 ## Benchmark
 
-Benchmark                          Mode  Cnt  Score   Error  Units
-porcEpic.EtcdBench.etcd_000        avgt   25  2.329 ± 0.270  ms/op
-porcEpic.KeyValueBench.kv_c01_bad  avgt   25  0.248 ± 0.007  ms/op
-porcEpic.KeyValueBench.kv_c01_ok   avgt   25  0.266 ± 0.005  ms/op
+```
+sbt bench/jmh:run
+
+Benchmark                    Mode  Cnt  Score   Error  Units
+porcEpic.EtcdBench.etcd_000  avgt   25  2.329 ± 0.270  ms/op
+...
+```
